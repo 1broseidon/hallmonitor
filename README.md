@@ -137,7 +137,7 @@ Hall Monitor provides pre-built Docker images and binaries for easy deployment.
 Docker images are automatically built and published to GitHub Container Registry with **multi-architecture support**:
 
 - **Latest stable**: `ghcr.io/1broseidon/hallmonitor:latest`
-- **Specific version**: `ghcr.io/1broseidon/hallmonitor:v1.0.0`
+- **Specific version**: `ghcr.io/1broseidon/hallmonitor:v0.1.0`
 
 **Supported architectures** (automatically detected):
 - `linux/amd64` - x86_64 systems (Intel/AMD processors)
@@ -148,9 +148,32 @@ Docker automatically pulls the correct image for your system architecture.
 ### Download Binaries
 
 Pre-compiled binaries are available from the [Releases](https://github.com/1broseidon/hallmonitor/releases) page for:
-- Linux (amd64, arm64)
-- macOS (Intel, Apple Silicon)
-- Windows (amd64)
+
+**Linux:**
+- `hallmonitor-linux-amd64` - Intel/AMD 64-bit
+- `hallmonitor-linux-arm64` - ARM64 (Raspberry Pi, AWS Graviton)
+
+**macOS:**
+- `hallmonitor-darwin-amd64` - Intel Macs
+- `hallmonitor-darwin-arm64` - Apple Silicon (M1/M2/M3)
+
+**Windows:**
+- `hallmonitor-windows-amd64.exe` - 64-bit Windows
+
+Each binary includes a SHA256 checksum file for verification.
+
+**Quick Start with Binary:**
+```bash
+# Download and extract
+wget https://github.com/1broseidon/hallmonitor/releases/download/v0.1.0/hallmonitor-linux-amd64
+chmod +x hallmonitor-linux-amd64
+
+# Copy config template and customize
+cp config.example.yml config.yml
+
+# Run
+./hallmonitor-linux-amd64 --config config.yml
+```
 
 ### Building from Source
 

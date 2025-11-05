@@ -15,10 +15,16 @@ Automatically builds and publishes multi-architecture Docker images to GitHub Co
 - Manual workflow dispatch
 
 **Published Images:**
-- `ghcr.io/1broseidon/hallmonitor:latest` - Latest from main branch
-- `ghcr.io/1broseidon/hallmonitor:v1.2.3` - Specific version tags
-- `ghcr.io/1broseidon/hallmonitor:1.2` - Major.minor tags
-- `ghcr.io/1broseidon/hallmonitor:1` - Major version tags
+- `ghcr.io/1broseidon/hallmonitor:latest` - Latest from main branch or latest release tag
+- `ghcr.io/1broseidon/hallmonitor:v0.1.0` - Specific version tags (when tag pushed)
+- `ghcr.io/1broseidon/hallmonitor:0.1` - Major.minor tags (e.g., v0.1.0 → 0.1)
+- `ghcr.io/1broseidon/hallmonitor:0` - Major version tags (e.g., v0.1.0 → 0)
+
+**When you push tag `v0.1.0`, these tags are created:**
+- `v0.1.0` (exact version)
+- `0.1` (major.minor)
+- `0` (major)
+- `latest` (always points to latest release)
 
 **Platforms:**
 - `linux/amd64` - x86_64 systems
