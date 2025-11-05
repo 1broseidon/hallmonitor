@@ -11,7 +11,7 @@ Common issues and solutions for Hall Monitor.
 **Solution**:
 ```bash
 # Find what's using the port
-lsof -i :8080
+lsof -i :7878
 
 # Change Hall Monitor port
 # Edit config.yml or .env
@@ -330,7 +330,7 @@ groups:
 **Solution**:
 ```bash
 # Check if monitors are hanging
-curl http://localhost:8080/api/v1/monitors
+curl http://localhost:7878/api/v1/monitors
 
 # Reduce result retention (if available)
 # Check monitor timeouts
@@ -380,7 +380,7 @@ monitoring:
 ```bash
 # Wait 30-60 seconds for first check cycle
 # Or check API directly
-curl http://localhost:8080/api/v1/monitors
+curl http://localhost:7878/api/v1/monitors
 ```
 
 3. **JavaScript Errors**
@@ -400,7 +400,7 @@ curl http://localhost:8080/api/v1/monitors
 
 1. **Verify metrics endpoint**
 ```bash
-curl http://hallmonitor:8080/metrics
+curl http://hallmonitor:7878/metrics
 # Should return Prometheus format metrics
 ```
 
@@ -409,7 +409,7 @@ curl http://hallmonitor:8080/metrics
 scrape_configs:
   - job_name: 'hallmonitor'
     static_configs:
-      - targets: ['hallmonitor:8080']  # Verify hostname/IP
+      - targets: ['hallmonitor:7878']  # Verify hostname/IP
     metrics_path: '/metrics'
     scrape_interval: 15s
 ```
@@ -499,7 +499,7 @@ spec:
 kubectl get svc -n hallmonitor
 
 # Port forward for testing
-kubectl port-forward svc/hallmonitor 8080:8080 -n hallmonitor
+kubectl port-forward svc/hallmonitor 7878:7878 -n hallmonitor
 
 # Check Ingress (if configured)
 kubectl get ingress -n hallmonitor

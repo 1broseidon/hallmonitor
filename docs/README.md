@@ -57,7 +57,7 @@ See [Installation Guide](./02-getting-started/installation.md) for details.
 **Basic Configuration**:
 ```yaml
 server:
-  port: "8080"
+  port: "7878"
   enableDashboard: true
 
 monitoring:

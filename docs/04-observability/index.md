@@ -28,7 +28,7 @@ Hall Monitor includes a lightweight web dashboard accessible at the root path.
 
 Open your browser to:
 ```
-http://localhost:8080/
+http://localhost:7878/
 ```
 
 See [Dashboard Documentation](./dashboard.md) for details.
@@ -61,7 +61,7 @@ Add to your `prometheus.yml`:
 scrape_configs:
   - job_name: 'hallmonitor'
     static_configs:
-      - targets: ['hallmonitor:8080']
+      - targets: ['hallmonitor:7878']
     metrics_path: '/metrics'
     scrape_interval: 15s
 ```
@@ -139,7 +139,7 @@ This includes:
 - **Alertmanager** - Alert routing
 
 Access:
-- Hall Monitor: http://localhost:8080
+- Hall Monitor: http://localhost:7878
 - Grafana: http://localhost:3000 (admin/hallmonitor)
 - Prometheus: http://localhost:19090
 - Alertmanager: http://localhost:19093

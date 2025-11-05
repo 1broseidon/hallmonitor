@@ -99,21 +99,7 @@ For advanced setups with Prometheus and Grafana, see [Observability Guide](../04
 
 ### Configuration
 
-Edit the `.env` file to customize:
-
-```bash
-# Server configuration
-SERVER_PORT=8080
-SERVER_HOST=0.0.0.0
-
-# Logging
-LOG_LEVEL=info
-LOG_FORMAT=json
-
-# Grafana credentials
-GRAFANA_ADMIN_USER=admin
-GRAFANA_ADMIN_PASSWORD=hallmonitor
-```
+Edit `config.yml` to customize your monitors. See [Configuration Basics](./configuration-basics.md) for details.
 
 ## Kubernetes
 
@@ -183,7 +169,7 @@ helm install hallmonitor ./k8s/helm/hallmonitor -n hallmonitor --create-namespac
 
 **Inside the cluster**:
 ```
-http://hallmonitor.hallmonitor.svc.cluster.local:8080
+http://hallmonitor.hallmonitor.svc.cluster.local:7878
 ```
 
 **External access with port-forward**:
@@ -262,7 +248,7 @@ ingress:
 
 config:
   server:
-    port: "8080"
+    port: "7878"
   monitoring:
     defaultInterval: "30s"
     groups:

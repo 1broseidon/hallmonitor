@@ -141,7 +141,7 @@ if docker buildx build "${BUILD_ARGS[@]}" .; then
     echo -e "${YELLOW}To push images, run with --push flag${NC}"
     echo ""
     echo -e "${CYAN}Run the image:${NC}"
-    echo -e "  ${GREEN}docker run -p 8080:8080 $REGISTRY/$IMAGE_NAME:$VERSION${NC}"
+    echo -e "  ${GREEN}docker run --network host --cap-add NET_RAW --cap-add NET_ADMIN -v \$(pwd)/config.yml:/etc/hallmonitor/config.yml:ro $REGISTRY/$IMAGE_NAME:$VERSION${NC}"
   fi
 else
   echo ""

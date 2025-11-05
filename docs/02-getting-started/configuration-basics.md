@@ -21,7 +21,7 @@ The simplest working configuration:
 
 ```yaml
 server:
-  port: "8080"
+  port: "7878"
   host: "0.0.0.0"
   enableDashboard: true
 
@@ -44,7 +44,7 @@ Configure the HTTP server:
 
 ```yaml
 server:
-  port: "8080"                    # Port to listen on
+  port: "7878"                    # Port to listen on
   host: "0.0.0.0"                 # Interface to bind (0.0.0.0 = all)
   enableDashboard: true           # Enable web dashboard
   corsOrigins:                    # CORS allowed origins
@@ -236,7 +236,7 @@ monitoring:
 Set variables before starting:
 
 ```bash
-export SERVER_PORT=8080
+export SERVER_PORT=7878
 export API_URL="https://api.example.com"
 export API_TOKEN="secret-token"
 

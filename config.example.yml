@@ -4,7 +4,7 @@
 # Copy this file to config.yml and customize for your environment
 
 server:
-  port: "8080"
+  port: "7878"
   host: "0.0.0.0"
   enableDashboard: true  # Enable built-in lightweight dashboard at / and /dashboard
 
