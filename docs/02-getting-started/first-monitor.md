@@ -68,6 +68,10 @@ monitoring:
 ### Using Docker
 
 ```bash
+# First, ensure you have config.yml in current directory
+cp config.example.yml config.yml
+# Edit config.yml with your monitor
+
 docker run -d \
   --name hallmonitor \
   --network host \

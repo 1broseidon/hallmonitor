@@ -25,13 +25,13 @@ cd hallmonitor
 # 2. Copy environment template
 cp .env.example .env
 
-# 3. Copy configuration template
+# 3. Create your config from the example
 cp config.example.yml config.yml
 
 # 4. Edit configuration with your monitors
 nano config.yml
 
-# 5. Start Hall Monitor
+# 5. Start Hall Monitor (mounts config.yml into container)
 docker compose up -d
 
 # 6. Verify it's running

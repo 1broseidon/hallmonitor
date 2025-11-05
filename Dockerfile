@@ -77,9 +77,7 @@ COPY --from=builder /build/hallmonitor /usr/local/bin/hallmonitor
 RUN chmod +x /usr/local/bin/hallmonitor && \
     setcap cap_net_raw+ep /usr/local/bin/hallmonitor
 
-# Copy default config (can be overridden by volume mount)
-COPY config.yml /etc/hallmonitor/config.yml
-
+# Ensure config directory exists and has correct permissions
 RUN chown -R hallmonitor:hallmonitor /etc/hallmonitor
 
 # Switch to non-root user

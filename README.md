@@ -49,6 +49,13 @@ Hall Monitor is a Go-based monitoring solution designed for home labs and cloud-
 
 ### Using Docker
 
+First, copy and customize the config:
+```bash
+cp config.example.yml config.yml
+# Edit config.yml with your monitors
+```
+
+Then run:
 ```bash
 docker run -d \
   --name hallmonitor \
@@ -58,6 +65,8 @@ docker run -d \
   -v $(pwd)/config.yml:/etc/hallmonitor/config.yml:ro \
   ghcr.io/1broseidon/hallmonitor:latest
 ```
+
+**Note**: You must provide a config file via volume mount. The container does not include a default config.
 
 ### Using Docker Compose
 

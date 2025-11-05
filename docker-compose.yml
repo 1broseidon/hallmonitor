@@ -1,21 +1,22 @@
 # Hall Monitor - Docker Compose Configuration
 # Simple deployment with Docker Compose
 #
+# Prerequisites:
+#   1. Copy config.example.yml to config.yml
+#   2. Edit config.yml with your monitors
+#
 # Usage:
 #   docker compose up -d
 #
-# Customize with environment variables:
+# Use a different config file:
 #   CONFIG_FILE=./my-config.yml docker compose up -d
-#
-# To build locally instead of using the published image:
-#   docker compose build
 
 services:
   hallmonitor:
     image: ghcr.io/1broseidon/hallmonitor:latest
     container_name: hallmonitor
     volumes:
-      - ${CONFIG_FILE:-./config.example.yml}:/etc/hallmonitor/config.yml:ro
+      - ${CONFIG_FILE:-./config.yml}:/etc/hallmonitor/config.yml:ro
     environment:
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - LOG_FORMAT=${LOG_FORMAT:-json}
