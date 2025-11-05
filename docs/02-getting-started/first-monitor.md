@@ -8,45 +8,18 @@ Let's start with something simple - monitoring a public website. We'll use `http
 
 ## Step 2: Create Configuration File
 
-If you haven't already, create a configuration file:
+Create a minimal configuration file:
 
 ```bash
-# Copy the example
-cp config.example.yml config.yml
-
-# Or create a new file
-nano config.yml
-```
-
-## Step 3: Add Basic Configuration
-
-Add the server and logging configuration:
-
-```yaml
+cat > config.yml << 'EOF'
 server:
-  port: "8080"
+  port: "7878"
   host: "0.0.0.0"
   enableDashboard: true
 
-logging:
-  level: "info"
-  format: "text"
-  output: "stdout"
-
-metrics:
-  enabled: true
-  path: "/metrics"
-```
-
-## Step 4: Add Your First Monitor
-
-Add a monitoring section with a single HTTP monitor:
-
-```yaml
 monitoring:
   defaultInterval: "30s"
   defaultTimeout: "10s"
-
   groups:
     - name: "my-first-monitors"
       monitors:
@@ -54,24 +27,14 @@ monitoring:
           name: "example-website"
           url: "https://example.com"
           expectedStatus: 200
-          enabled: true
+EOF
 ```
 
-## Step 5: Start Hall Monitor
+## Step 3: Start Hall Monitor
 
-### Using Binary
-
-```bash
-./hallmonitor --config config.yml
-```
-
-### Using Docker
+### Using Docker (Recommended)
 
 ```bash
-# First, ensure you have config.yml in current directory
-cp config.example.yml config.yml
-# Edit config.yml with your monitor
-
 docker run -d \
   --name hallmonitor \
   --network host \
@@ -81,19 +44,21 @@ docker run -d \
   ghcr.io/1broseidon/hallmonitor:latest
 ```
 
-### Using Docker Compose
+### Using Binary
+
+Download from [Releases](https://github.com/1broseidon/hallmonitor/releases), then:
 
 ```bash
-# Ensure config.yml has your monitor
-docker compose up -d
+./hallmonitor-linux-amd64 --config config.yml
 ```
 
-## Step 6: Verify It's Working
+
+## Step 4: Verify It's Working
 
 ### Check the Health Endpoint
 
 ```bash
-curl http://localhost:8080/health
+curl http://localhost:7878/health
 ```
 
 Expected output:
@@ -107,7 +72,7 @@ Expected output:
 ### View Monitor Status
 
 ```bash
-curl http://localhost:8080/api/v1/monitors | jq
+curl http://localhost:7878/api/v1/monitors | jq
 ```
 
 Expected output:
@@ -128,7 +93,7 @@ Expected output:
 
 Open your browser to:
 ```
-http://localhost:8080
+http://localhost:7878
 ```
 
 You should see your monitor listed with a green "UP" status.
@@ -136,7 +101,7 @@ You should see your monitor listed with a green "UP" status.
 ### View Metrics
 
 ```bash
-curl http://localhost:8080/metrics | grep example
+curl http://localhost:7878/metrics | grep example
 ```
 
 Expected output:

@@ -38,24 +38,32 @@ Hall Monitor is a Go-based monitoring solution designed for home labs and cloud-
 
 ## Quick Start
 
-### Using Binary
+Get Hall Monitor running in under 2 minutes:
 
-1. Download the latest release for your platform
-2. Copy `config.example.yml` to `config.yml` and customize
-3. Run the binary:
-   ```bash
-   ./hallmonitor
-   ```
+**1. Create a minimal config file:**
 
-### Using Docker
-
-First, copy and customize the config:
 ```bash
-cp config.example.yml config.yml
-# Edit config.yml with your monitors
+cat > config.yml << 'EOF'
+server:
+  port: "7878"
+  host: "0.0.0.0"
+  enableDashboard: true
+
+monitoring:
+  defaultInterval: "30s"
+  defaultTimeout: "10s"
+  groups:
+    - name: "my-services"
+      monitors:
+        - type: "http"
+          name: "example"
+          url: "https://example.com"
+          expectedStatus: 200
+EOF
 ```
 
-Then run:
+**2. Run with Docker:**
+
 ```bash
 docker run -d \
   --name hallmonitor \
@@ -66,18 +74,30 @@ docker run -d \
   ghcr.io/1broseidon/hallmonitor:latest
 ```
 
-**Note**: You must provide a config file via volume mount. The container does not include a default config.
+**3. Access the dashboard:**
 
-### Using Docker Compose
+Open http://localhost:7878 in your browser.
 
+**That's it!** Edit `config.yml` to add your own monitors, then restart the container.
+
+---
+
+### Other Installation Methods
+
+**Docker Compose:**
 ```bash
 docker compose up -d
 ```
 
-### Using Kubernetes (Helm)
-
+**Kubernetes (Helm):**
 ```bash
 helm install hallmonitor ./k8s/helm/hallmonitor -n hallmonitor --create-namespace
+```
+
+**Binary:**
+Download from [Releases](https://github.com/1broseidon/hallmonitor/releases) and run:
+```bash
+./hallmonitor-linux-amd64 --config config.yml
 ```
 
 ## Configuration

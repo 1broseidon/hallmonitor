@@ -1,58 +1,101 @@
 # Installation
 
-This guide covers all installation methods for Hall Monitor. Choose the method that best fits your environment.
+This guide covers all installation methods for Hall Monitor.
+
+## Docker (Simplest - 2 Minutes)
+
+The fastest way to get started - no git clone required.
+
+### Prerequisites
+
+- Docker installed
+- 512MB RAM minimum
+
+### Quick Start
+
+**1. Create a minimal config file:**
+
+```bash
+cat > config.yml << 'EOF'
+server:
+  port: "7878"
+  host: "0.0.0.0"
+  enableDashboard: true
+
+monitoring:
+  defaultInterval: "30s"
+  defaultTimeout: "10s"
+  groups:
+    - name: "my-services"
+      monitors:
+        - type: "http"
+          name: "example"
+          url: "https://example.com"
+          expectedStatus: 200
+EOF
+```
+
+**2. Run with Docker:**
+
+```bash
+docker run -d \
+  --name hallmonitor \
+  --network host \
+  --cap-add NET_RAW \
+  --cap-add NET_ADMIN \
+  -v $(pwd)/config.yml:/etc/hallmonitor/config.yml:ro \
+  ghcr.io/1broseidon/hallmonitor:latest
+```
+
+**3. Access the dashboard:**
+
+Open http://localhost:7878 in your browser.
+
+**That's it!** Edit `config.yml` to add your monitors, then restart:
+```bash
+docker restart hallmonitor
+```
+
+---
 
 ## Docker Compose
 
-The easiest way to get started with Hall Monitor.
+For managing Hall Monitor with Docker Compose, especially useful for production deployments.
 
 ### Prerequisites
 
 - Docker 20.10 or higher
 - Docker Compose 2.0 or higher
-- 512MB RAM minimum
-- 1GB disk space
 
-### Simple Installation
+### Basic Setup
 
-Deploy Hall Monitor without additional services:
+**1. Create config file** (same as Docker method above)
 
-```bash
-# 1. Clone or download the repository
-git clone https://github.com/1broseidon/hallmonitor.git
-cd hallmonitor
+**2. Create `docker-compose.yml`:**
 
-# 2. Copy environment template
-cp .env.example .env
-
-# 3. Create your config from the example
-cp config.example.yml config.yml
-
-# 4. Edit configuration with your monitors
-nano config.yml
-
-# 5. Start Hall Monitor (mounts config.yml into container)
-docker compose up -d
-
-# 6. Verify it's running
-curl http://localhost:8080/health
+```yaml
+services:
+  hallmonitor:
+    image: ghcr.io/1broseidon/hallmonitor:latest
+    container_name: hallmonitor
+    volumes:
+      - ./config.yml:/etc/hallmonitor/config.yml:ro
+    network_mode: host
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
+    restart: unless-stopped
 ```
 
-Hall Monitor is now available at http://localhost:8080
-
-### Full Stack Installation
-
-Deploy Hall Monitor with Prometheus, Grafana, and Loki for complete observability:
+**3. Start:**
 
 ```bash
-# Start Hall Monitor
 docker compose up -d
-
-# Access the dashboard
-# Hall Monitor: http://localhost:8080
-# Grafana:      http://localhost:3000 (admin/hallmonitor)
-# Prometheus:   http://localhost:19090
 ```
+
+### Full Observability Stack
+
+For advanced setups with Prometheus and Grafana, see [Observability Guide](../04-observability/index.md).
 
 ### Configuration
 
@@ -85,19 +128,33 @@ Deploy Hall Monitor to your Kubernetes cluster.
 
 ### Quick Deployment
 
+**Option 1: Using Helm from GitHub**
+
 ```bash
-# Clone the repository
+# Add the repository (if available) or use direct chart path
+helm install hallmonitor oci://ghcr.io/1broseidon/hallmonitor -n hallmonitor --create-namespace
+
+# Or clone for custom values
 git clone https://github.com/1broseidon/hallmonitor.git
 cd hallmonitor
-
-# Deploy to Kubernetes using Helm
 helm install hallmonitor ./k8s/helm/hallmonitor -n hallmonitor --create-namespace
+```
+
+**Option 2: Direct Helm Install**
+
+```bash
+# Deploy with default values
+helm install hallmonitor \
+  --repo https://github.com/1broseidon/hallmonitor \
+  --version 0.1.0 \
+  -n hallmonitor --create-namespace \
+  hallmonitor
 
 # Check status
 kubectl get pods -n hallmonitor
 
 # Access via port-forward
-kubectl port-forward svc/hallmonitor 8080:8080 -n hallmonitor
+kubectl port-forward svc/hallmonitor 7878:7878 -n hallmonitor
 ```
 
 ### Environment-Specific Deployment
@@ -131,7 +188,7 @@ http://hallmonitor.hallmonitor.svc.cluster.local:8080
 
 **External access with port-forward**:
 ```bash
-kubectl port-forward svc/hallmonitor 8080:8080 -n hallmonitor
+kubectl port-forward svc/hallmonitor 7878:7878 -n hallmonitor
 ```
 
 **Production with Ingress** (after deployment):
@@ -363,7 +420,7 @@ After installation, verify Hall Monitor is working:
 ### Health Check
 
 ```bash
-curl http://localhost:8080/health
+curl http://localhost:7878/health
 ```
 
 Expected response:
@@ -377,20 +434,20 @@ Expected response:
 ### Monitor Status
 
 ```bash
-curl http://localhost:8080/api/v1/monitors | jq
+curl http://localhost:7878/api/v1/monitors | jq
 ```
 
 ### Metrics
 
 ```bash
-curl http://localhost:8080/metrics | grep hallmonitor
+curl http://localhost:7878/metrics | grep hallmonitor
 ```
 
 ### Dashboard
 
 Open your browser:
 ```
-http://localhost:8080
+http://localhost:7878
 ```
 
 ## Next Steps

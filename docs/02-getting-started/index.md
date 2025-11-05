@@ -1,93 +1,57 @@
 # Getting Started
 
-Get Hall Monitor up and running in minutes. This guide walks you through installation, basic configuration, and your first monitor.
+Get Hall Monitor running in **under 2 minutes** - no git clone required!
 
-## Quick Start Paths
+## Quick Start (2 Minutes)
 
-Choose the installation method that fits your environment:
-
-### Docker Compose (Recommended for Testing)
-Perfect for quick evaluation and single-server deployments.
-- **Time**: 2 minutes
-- **Complexity**: Beginner
-- **Prerequisites**: Docker and Docker Compose
-
-[Start with Docker Compose](./installation.md#docker-compose)
-
-### Kubernetes
-Ideal for production clusters and cloud-native environments.
-- **Time**: 5 minutes
-- **Complexity**: Intermediate
-- **Prerequisites**: Kubernetes cluster, kubectl
-
-[Start with Kubernetes](./installation.md#kubernetes)
-
-### Binary
-Direct installation on your server without containers.
-- **Time**: 3 minutes
-- **Complexity**: Beginner
-- **Prerequisites**: Linux/macOS server
-
-[Start with Binary](./installation.md#binary-installation)
-
-## Installation Overview
-
-### 1. Install Hall Monitor
-
-Choose your preferred installation method from the options above. Each method includes:
-- Step-by-step installation instructions
-- Configuration file setup
-- Service startup commands
-- Verification steps
-
-### 2. Create Configuration
-
-Hall Monitor uses YAML configuration files. Start with the example configuration:
+**1. Create a minimal config file:**
 
 ```bash
-# Copy the example configuration
-cp config.example.yml config.yml
+cat > config.yml << 'EOF'
+server:
+  port: "7878"
+  host: "0.0.0.0"
+  enableDashboard: true
 
-# Edit with your monitors
-nano config.yml
-```
-
-See [Configuration Basics](./configuration-basics.md) for detailed configuration guidance.
-
-### 3. Add Your First Monitor
-
-Add a simple HTTP monitor to test your setup:
-
-```yaml
 monitoring:
   defaultInterval: "30s"
   defaultTimeout: "10s"
-
   groups:
-    - name: "test-monitors"
+    - name: "my-services"
       monitors:
         - type: "http"
-          name: "example-website"
+          name: "example"
           url: "https://example.com"
           expectedStatus: 200
+EOF
 ```
 
-See [First Monitor](./first-monitor.md) for a complete walkthrough.
-
-### 4. Start Monitoring
-
-Start Hall Monitor and verify it's working:
+**2. Run with Docker:**
 
 ```bash
-# Access the dashboard
-open http://localhost:8080
-
-# Check health endpoint
-curl http://localhost:8080/health
-
-# View metrics
-curl http://localhost:8080/metrics
+docker run -d \
+  --name hallmonitor \
+  --network host \
+  --cap-add NET_RAW \
+  --cap-add NET_ADMIN \
+  -v $(pwd)/config.yml:/etc/hallmonitor/config.yml:ro \
+  ghcr.io/1broseidon/hallmonitor:latest
 ```
+
+**3. Access the dashboard:**
+
+Open http://localhost:7878 in your browser.
+
+**Done!** Edit `config.yml` to add your own monitors, then restart the container.
+
+---
+
+## Advanced Installation Methods
+
+For production deployments, Docker Compose, Kubernetes, or full observability stacks, see:
+- [Installation Guide](./installation.md) - All installation methods
+- [Configuration Basics](./configuration-basics.md) - Detailed configuration
+
 
 ## What's Next?
 
@@ -117,10 +81,10 @@ Once you have Hall Monitor running:
 
 | Endpoint | Purpose | URL |
 |----------|---------|-----|
-| Dashboard | Web UI | http://localhost:8080 |
-| Health Check | Service health | http://localhost:8080/health |
-| Metrics | Prometheus metrics | http://localhost:8080/metrics |
-| API | Monitor status | http://localhost:8080/api/v1/monitors |
+| Dashboard | Web UI | http://localhost:7878 |
+| Health Check | Service health | http://localhost:7878/health |
+| Metrics | Prometheus metrics | http://localhost:7878/metrics |
+| API | Monitor status | http://localhost:7878/api/v1/monitors |
 
 ### Common Commands
 
@@ -134,7 +98,7 @@ docker compose down           # Stop
 # Kubernetes
 kubectl get pods -n hallmonitor                    # Check status
 kubectl logs -f deployment/hallmonitor -n hallmonitor  # View logs
-kubectl port-forward svc/hallmonitor 8080:8080 -n hallmonitor  # Access locally
+kubectl port-forward svc/hallmonitor 7878:7878 -n hallmonitor  # Access locally
 
 # Binary
 ./hallmonitor --config config.yml  # Start
