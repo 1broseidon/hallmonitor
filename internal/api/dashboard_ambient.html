@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-view="ambient">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark">
+    <title>Hall Monitor - Ambient View</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            line-height: 1.6;
+        }
+
+        /* Theme Styles */
+        html[data-theme="dark"] {
+            color-scheme: dark;
+        }
+
+        html[data-theme="dark"] body {
+            background-color: #0a0a0a;
+            color: #e0e0e0;
+        }
+
+        html[data-theme="light"] body {
+            background-color: #f5f5f5;
+            color: #222;
+        }
+
+        /* Header */
+        .top-header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid;
+            transition: var(--transition);
+        }
+
+        html[data-theme="dark"] .top-header {
+            background-color: rgba(10, 10, 10, 0.8);
+            border-bottom-color: rgba(255, 255, 255, 0.08);
+        }
+
+        html[data-theme="light"] .top-header {
+            background-color: rgba(255, 255, 255, 0.8);
+            border-bottom-color: rgba(0, 0, 0, 0.08);
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        html[data-theme="dark"] .header-title {
+            color: #ffffff;
+        }
+
+        html[data-theme="light"] .header-title {
+            color: #111;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .header-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            border: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: inherit;
+        }
+
+        html[data-theme="dark"] .header-btn {
+            background-color: rgba(255, 255, 255, 0.08);
+            color: #e0e0e0;
+        }
+
+        html[data-theme="dark"] .header-btn:hover {
+            background-color: rgba(255, 255, 255, 0.12);
+        }
+
+        html[data-theme="light"] .header-btn {
+            background-color: rgba(0, 0, 0, 0.04);
+            color: #111;
+        }
+
+        html[data-theme="light"] .header-btn:hover {
+            background-color: rgba(0, 0, 0, 0.08);
+        }
+
+        .header-btn-icon-only {
+            padding: 0.5rem;
+            width: 36px;
+            height: 36px;
+            justify-content: center;
+        }
+
+        /* Main Container */
+        .main-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: calc(100vh - 100px);
+        }
+
+        /* Micro Stats */
+        .micro-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 3rem;
+        }
+
+        .micro-stat {
+            text-align: center;
+            padding: 1.5rem 1rem;
+            border-radius: 8px;
+            border: 1px solid;
+            transition: var(--transition);
+        }
+
+        html[data-theme="dark"] .micro-stat {
+            background: rgba(255, 255, 255, 0.02);
+            border-color: rgba(255, 255, 255, 0.05);
+        }
+
+        html[data-theme="light"] .micro-stat {
+            background: #ffffff;
+            border-color: rgba(0, 0, 0, 0.08);
+        }
+
+        .micro-stat:hover {
+            transform: translateY(-2px);
+        }
+
+        html[data-theme="dark"] .micro-stat:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        html[data-theme="light"] .micro-stat:hover {
+            border-color: rgba(0, 0, 0, 0.12);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        .micro-stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .micro-stat-label {
+            font-size: 0.75rem;
+            opacity: 0.7;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Heatmap Card */
+        .heatmap-card {
+            border-radius: 12px;
+            padding: 2rem;
+            border: 1px solid;
+        }
+
+        html[data-theme="dark"] .heatmap-card {
+            background: rgba(255, 255, 255, 0.02);
+            border-color: rgba(255, 255, 255, 0.05);
+        }
+
+        html[data-theme="light"] .heatmap-card {
+            background: #ffffff;
+            border-color: rgba(0, 0, 0, 0.08);
+        }
+
+        .heatmap-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .time-range-toggle {
+            display: flex;
+            gap: 0.25rem;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 0.25rem;
+            border-radius: 6px;
+        }
+
+        html[data-theme="light"] .time-range-toggle {
+            background: rgba(0, 0, 0, 0.03);
+        }
+
+        .time-range-btn {
+            padding: 0.25rem 0.75rem;
+            border: none;
+            background: transparent;
+            color: inherit;
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: var(--transition);
+            opacity: 0.5;
+        }
+
+        .time-range-btn:hover {
+            opacity: 0.8;
+        }
+
+        .time-range-btn.active {
+            opacity: 1;
+        }
+
+        html[data-theme="dark"] .time-range-btn.active {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        html[data-theme="light"] .time-range-btn.active {
+            background: rgba(0, 0, 0, 0.08);
+        }
+
+        .heatmap-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            opacity: 0.7;
+        }
+
+        .heatmap-legend {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            font-size: 0.75rem;
+            opacity: 0.5;
+        }
+
+        .legend-box {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+
+        .legend-box.level-0 { background: rgba(255, 255, 255, 0.03); }
+        .legend-box.level-1 { background: rgba(72, 199, 142, 0.2); }
+        .legend-box.level-2 { background: rgba(72, 199, 142, 0.4); }
+        .legend-box.level-3 { background: rgba(72, 199, 142, 0.6); }
+        .legend-box.level-4 { background: rgba(72, 199, 142, 0.8); }
+        .legend-box.level-5 { background: #48c78e; }
+
+        .heatmap-grid {
+            display: grid;
+            /* grid-template-columns set dynamically by JavaScript */
+            gap: 3px;
+        }
+
+        .heatmap-cell {
+            aspect-ratio: 1;
+            border-radius: 2px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .heatmap-cell:hover {
+            transform: scale(1.3);
+            z-index: 10;
+        }
+
+        html[data-theme="dark"] .heatmap-cell.level-0 { background: rgba(255, 255, 255, 0.03); }
+        html[data-theme="dark"] .heatmap-cell.level-1 { background: rgba(72, 199, 142, 0.2); }
+        html[data-theme="dark"] .heatmap-cell.level-2 { background: rgba(72, 199, 142, 0.4); }
+        html[data-theme="dark"] .heatmap-cell.level-3 { background: rgba(72, 199, 142, 0.6); }
+        html[data-theme="dark"] .heatmap-cell.level-4 { background: rgba(72, 199, 142, 0.8); }
+        html[data-theme="dark"] .heatmap-cell.level-5 { background: #48c78e; }
+
+        html[data-theme="light"] .heatmap-cell.level-0 { background: rgba(0, 0, 0, 0.03); }
+        html[data-theme="light"] .heatmap-cell.level-1 { background: rgba(72, 199, 142, 0.3); }
+        html[data-theme="light"] .heatmap-cell.level-2 { background: rgba(72, 199, 142, 0.5); }
+        html[data-theme="light"] .heatmap-cell.level-3 { background: rgba(72, 199, 142, 0.7); }
+        html[data-theme="light"] .heatmap-cell.level-4 { background: rgba(72, 199, 142, 0.85); }
+        html[data-theme="light"] .heatmap-cell.level-5 { background: #48c78e; }
+
+        /* View Toggle */
+        .view-toggle {
+            text-align: center;
+            padding: 1rem;
+            opacity: 0.5;
+            transition: opacity 0.3s ease;
+        }
+
+        .view-toggle:hover {
+            opacity: 1;
+        }
+
+        .view-toggle a {
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        html[data-theme="dark"] .view-toggle a {
+            color: #888;
+        }
+
+        html[data-theme="dark"] .view-toggle a:hover {
+            color: #e0e0e0;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        html[data-theme="light"] .view-toggle a {
+            color: #666;
+        }
+
+        html[data-theme="light"] .view-toggle a:hover {
+            color: #111;
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 2rem 1rem;
+                min-height: calc(100vh - 80px);
+            }
+
+            .header-content {
+                padding: 1rem;
+            }
+
+            .micro-stats {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+                margin-bottom: 2rem;
+            }
+
+            .heatmap-grid {
+                gap: 2px;
+            }
+
+            .heatmap-card {
+                padding: 1.5rem;
+            }
+        }
+
+        /* Loading State */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 200px;
+            opacity: 0.5;
+        }
+
+        .loading i {
+            font-size: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="top-header">
+        <div class="header-content">
+            <h1 class="header-title">
+                <span><i class="fas fa-shield-halved"></i></span>
+                <span>Hall Monitor</span>
+            </h1>
+            <div class="header-actions">
+                <button class="header-btn header-btn-icon-only" onclick="toggleTheme()" title="Toggle theme">
+                    <i class="fas fa-circle-half-stroke"></i>
+                </button>
+                <button class="header-btn" onclick="refreshData()">
+                    <i class="fas fa-sync"></i>
+                    <span>Refresh</span>
+                </button>
+                <button class="header-btn" onclick="exportToGrafana()">
+                    <i class="fas fa-download"></i>
+                    <span>Export</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <!-- Micro Stats -->
+        <div class="micro-stats">
+            <div class="micro-stat">
+                <div class="micro-stat-value" id="uptime-value" style="color: #48c78e;">
+                    --<span style="font-size: 1rem; opacity: 0.5;">%</span>
+                </div>
+                <div class="micro-stat-label">Uptime</div>
+            </div>
+            <div class="micro-stat">
+                <div class="micro-stat-value" id="response-value" style="color: #667eea;">
+                    --<span style="font-size: 1rem; opacity: 0.5;">ms</span>
+                </div>
+                <div class="micro-stat-label">Response</div>
+            </div>
+            <div class="micro-stat">
+                <div class="micro-stat-value" id="incidents-value" style="color: #48c78e;">
+                    --
+                </div>
+                <div class="micro-stat-label">Incidents</div>
+            </div>
+        </div>
+
+        <!-- Uptime Heatmap -->
+        <div class="heatmap-card">
+            <div class="heatmap-header">
+                <div>
+                    <div class="heatmap-title">Uptime History</div>
+                    <p style="font-size: 0.75rem; opacity: 0.5; margin-top: 0.25rem;">Data accumulates as Hall Monitor runs. Gray = No data yet.</p>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.75rem;">
+                    <div class="time-range-toggle">
+                        <button class="time-range-btn" onclick="setTimeRange(1)">1d</button>
+                        <button class="time-range-btn" onclick="setTimeRange(7)">7d</button>
+                        <button class="time-range-btn active" onclick="setTimeRange(30)">30d</button>
+                    </div>
+                    <div class="heatmap-legend">
+                        <span>Less</span>
+                        <span class="legend-box level-0"></span>
+                        <span class="legend-box level-1"></span>
+                        <span class="legend-box level-2"></span>
+                        <span class="legend-box level-3"></span>
+                        <span class="legend-box level-4"></span>
+                        <span class="legend-box level-5"></span>
+                        <span>More</span>
+                    </div>
+                </div>
+            </div>
+            <div class="heatmap-grid" id="heatmap-grid">
+                <div class="loading">
+                    <i class="fas fa-spinner fa-pulse"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- View Toggle -->
+        <div class="view-toggle">
+            <a href="#" onclick="switchToMetricView(); return false;">
+                <i class="fas fa-chart-line"></i>
+                <span>Switch to Metric View</span>
+                <i class="fas fa-arrow-right" style="font-size: 0.75rem;"></i>
+            </a>
+        </div>
+    </div>
+
+    <script>
+        const API_ENDPOINT = '/api/v1';
+        let monitorsData = null;
+        let uptimeHistory = null;
+        let currentTimeRange = 30; // Default to 30 days for ambient view
+
+        // Initialize theme
+        function initTheme() {
+            const html = document.documentElement;
+            const savedTheme = localStorage.getItem('hallmonitor_theme') || 'dark';
+            html.dataset.theme = savedTheme;
+        }
+
+        // Check if we should redirect to preferred view
+        function checkViewPreference() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const viewParam = urlParams.get('view');
+            
+            // Only auto-redirect if no explicit view parameter in URL
+            if (!viewParam) {
+                const preferredView = localStorage.getItem('hallmonitor_preferredView');
+                const currentView = document.documentElement.getAttribute('data-view');
+                
+                // If user has a preference and it's different from current view, redirect
+                if (preferredView && preferredView !== currentView) {
+                    window.location.href = `/dashboard?view=${preferredView}`;
+                    return false; // Don't continue initialization
+                }
+            }
+            return true; // Continue initialization
+        }
+
+        // Initialize settings from localStorage
+        function initSettings() {
+            // Check if we should redirect to preferred view
+            if (!checkViewPreference()) {
+                return; // Don't initialize if we're redirecting
+            }
+            
+            // Restore time range preference for ambient view
+            const savedTimeRange = localStorage.getItem('hallmonitor_timeRange_ambient');
+            if (savedTimeRange) {
+                currentTimeRange = parseInt(savedTimeRange, 10);
+            }
+            
+            // Update button active state
+            updateTimeRangeButtons();
+        }
+
+        function updateTimeRangeButtons() {
+            document.querySelectorAll('.time-range-btn').forEach(btn => {
+                btn.classList.remove('active');
+                // Check if this button matches current time range
+                const btnOnClick = btn.getAttribute('onclick');
+                const match = btnOnClick.match(/setTimeRange\((\d+)\)/);
+                if (match && parseInt(match[1], 10) === currentTimeRange) {
+                    btn.classList.add('active');
+                }
+            });
+        }
+
+        // Initialize on load
+        initTheme();
+        document.addEventListener('DOMContentLoaded', () => {
+            initSettings();
+            loadData();
+            loadUptimeHistory();
+            setInterval(loadData, 30000); // Refresh every 30s
+        });
+
+        function setTimeRange(days) {
+            currentTimeRange = days;
+            // Save to localStorage
+            localStorage.setItem('hallmonitor_timeRange_ambient', days.toString());
+            // Update button states
+            updateTimeRangeButtons();
+            // Regenerate heatmap
+            generateHeatmap(uptimeHistory);
+        }
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            const newTheme = html.dataset.theme === 'dark' ? 'light' : 'dark';
+            html.dataset.theme = newTheme;
+            localStorage.setItem('hallmonitor_theme', newTheme);
+        }
+
+        async function loadData() {
+            try {
+                const response = await fetch(`${API_ENDPOINT}/monitors`);
+                const data = await response.json();
+                monitorsData = data;
+                updateUI(data);
+            } catch (error) {
+                console.error('Failed to load data:', error);
+                // Show error in stats
+                document.getElementById('uptime-value').innerHTML = 
+                    `--<span style="font-size: 1rem; opacity: 0.5;">%</span>`;
+                document.getElementById('response-value').innerHTML = 
+                    `--<span style="font-size: 1rem; opacity: 0.5;">ms</span>`;
+                document.getElementById('incidents-value').textContent = '--';
+            }
+        }
+
+        async function loadUptimeHistory() {
+            try {
+                // Fetch Prometheus metrics to build uptime history
+                const response = await fetch('/metrics');
+                const metricsText = await response.text();
+                uptimeHistory = parseUptimeMetrics(metricsText);
+                generateHeatmap(uptimeHistory);
+            } catch (error) {
+                console.error('Failed to load uptime history:', error);
+                // Fall back to simulated data for demo
+                generateHeatmap(null);
+            }
+        }
+
+        function parseUptimeMetrics(metricsText) {
+            // Parse hallmonitor_monitor_up metric from Prometheus format
+            // This is a simple parser - in production you'd use a proper metrics library
+            const lines = metricsText.split('\n');
+            const uptimeData = {};
+            
+            for (const line of lines) {
+                if (line.startsWith('hallmonitor_monitor_up{')) {
+                    // Extract value (1 for up, 0 for down)
+                    const match = line.match(/hallmonitor_monitor_up\{.*\}\s+([\d.]+)/);
+                    if (match) {
+                        const value = parseFloat(match[1]);
+                        // Store current status (in real implementation, would aggregate over time)
+                        const date = new Date().toISOString().split('T')[0];
+                        if (!uptimeData[date]) uptimeData[date] = [];
+                        uptimeData[date].push(value);
+                    }
+                }
+            }
+            
+            return uptimeData;
+        }
+
+        function refreshData() {
+            loadData();
+            loadUptimeHistory();
+        }
+
+        function exportToGrafana() {
+            window.open('/api/v1/grafana/dashboard', '_blank');
+        }
+
+        function parseDuration(durationStr) {
+            if (!durationStr) return 0;
+            const match = durationStr.match(/([\d.]+)(ms|s|µs)/);
+            if (!match) return 0;
+            const value = parseFloat(match[1]);
+            const unit = match[2];
+            if (unit === 's') return value * 1000;
+            if (unit === 'µs') return value / 1000;
+            return value;
+        }
+
+        function updateUI(data) {
+            const monitors = data.monitors || [];
+            const total = monitors.length;
+            const down = monitors.filter(m => m.status !== 'up').length;
+            const uptime = total > 0 ? ((total - down) / total * 100) : 100;
+
+            // Calculate average response time
+            const responseTimes = monitors
+                .map(m => parseDuration(m.duration))
+                .filter(t => t > 0);
+            const avgResponse = responseTimes.length > 0 
+                ? (responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length)
+                : 0;
+
+            // Update micro stats
+            document.getElementById('uptime-value').innerHTML = 
+                `${uptime.toFixed(2)}<span style="font-size: 1rem; opacity: 0.5;">%</span>`;
+            document.getElementById('response-value').innerHTML = 
+                `${avgResponse.toFixed(0)}<span style="font-size: 1rem; opacity: 0.5;">ms</span>`;
+            document.getElementById('incidents-value').textContent = down;
+
+            // Update colors
+            const uptimeEl = document.getElementById('uptime-value');
+            const incidentsEl = document.getElementById('incidents-value');
+            
+            if (uptime >= 99.9) {
+                uptimeEl.style.color = '#48c78e';
+            } else if (uptime >= 99) {
+                uptimeEl.style.color = '#ffdd57';
+            } else {
+                uptimeEl.style.color = '#f14668';
+            }
+
+            incidentsEl.style.color = down === 0 ? '#48c78e' : '#f14668';
+        }
+
+        function generateHeatmap(historyData) {
+            const grid = document.getElementById('heatmap-grid');
+            grid.innerHTML = '';
+            
+            const today = new Date();
+            const todayStr = today.toISOString().split('T')[0];
+            
+            // Special handling for 1 day view - show hourly intervals
+            if (currentTimeRange === 1) {
+                const hours = 24;
+                grid.style.gridTemplateColumns = `repeat(${hours}, 1fr)`;
+                
+                for (let i = 0; i < hours; i++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'heatmap-cell';
+                    
+                    const hourStart = new Date(today);
+                    hourStart.setHours(0, 0, 0, 0);
+                    hourStart.setHours(i);
+                    
+                    const hourEnd = new Date(hourStart);
+                    hourEnd.setHours(i + 1);
+                    
+                    const now = new Date();
+                    const isFuture = hourStart > now;
+                    
+                    // Calculate uptime level for this hour
+                    let level;
+                    let tooltipText;
+                    
+                    if (isFuture) {
+                        // Future hours show as gray
+                        level = 0;
+                        tooltipText = `${hourStart.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})} - Not yet reached`;
+                    } else if (monitorsData) {
+                        // Use current monitor status (in real impl, would fetch hourly data)
+                        const monitors = monitorsData.monitors || [];
+                        const total = monitors.length;
+                        const up = monitors.filter(m => m.status === 'up').length;
+                        const uptimePercent = total > 0 ? (up / total * 100) : 100;
+                        level = Math.floor((uptimePercent / 100) * 5);
+                        tooltipText = `${hourStart.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})} - ${hourEnd.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}: ${uptimePercent.toFixed(1)}% uptime`;
+                    } else {
+                        level = 0;
+                        tooltipText = `${hourStart.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})} - No data`;
+                    }
+                    
+                    cell.classList.add(`level-${level}`);
+                    cell.title = tooltipText;
+                    
+                    grid.appendChild(cell);
+                }
+                return;
+            }
+            
+            // Handle 7 and 30 day views
+            const days = currentTimeRange;
+            const columns = days === 7 ? 7 : 30;
+            grid.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
+            
+            for (let i = 0; i < days; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'heatmap-cell';
+                
+                const date = new Date(today);
+                date.setDate(date.getDate() - (days - 1 - i));
+                const dateStr = date.toISOString().split('T')[0];
+                
+                // Calculate uptime level for this day
+                let level;
+                let tooltipText;
+                
+                if (historyData && historyData[dateStr]) {
+                    // Use actual data from Prometheus metrics
+                    const dayData = historyData[dateStr];
+                    const avgUptime = dayData.reduce((a, b) => a + b, 0) / dayData.length;
+                    level = Math.floor(avgUptime * 5);
+                    const uptimePercent = (level / 5 * 100).toFixed(1);
+                    tooltipText = `${date.toLocaleDateString()}: ${uptimePercent}% uptime`;
+                } else if (dateStr === todayStr && monitorsData) {
+                    // Use current monitor status for TODAY only
+                    const monitors = monitorsData.monitors || [];
+                    const total = monitors.length;
+                    const up = monitors.filter(m => m.status === 'up').length;
+                    const uptimePercent = total > 0 ? (up / total * 100) : 100;
+                    level = Math.floor((uptimePercent / 100) * 5);
+                    tooltipText = `${date.toLocaleDateString()}: ${uptimePercent.toFixed(1)}% uptime (current)`;
+                } else {
+                    // No data available - show as level 0 (gray)
+                    level = 0;
+                    tooltipText = `${date.toLocaleDateString()}: No data (Hall Monitor not running)`;
+                }
+                
+                cell.classList.add(`level-${level}`);
+                cell.title = tooltipText;
+                
+                grid.appendChild(cell);
+            }
+        }
+
+        function switchToMetricView() {
+            localStorage.setItem('hallmonitor_preferredView', 'metric');
+            window.location.href = '/dashboard?view=metric';
+        }
+    </script>
+</body>
+</html>
+

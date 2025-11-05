@@ -1,0 +1,123 @@
+# Hall Monitor Configuration Example
+# Lightweight network monitoring for home labs
+#
+# Copy this file to config.yml and customize for your environment
+
+server:
+  port: "8080"
+  host: "0.0.0.0"
+  enableDashboard: true  # Enable built-in lightweight dashboard at / and /dashboard
+
+metrics:
+  enabled: true
+  path: "/metrics"
+  includeProcessMetrics: true
+  includeGoMetrics: true
+
+logging:
+  level: "info"           # debug, info, warn, error
+  format: "json"          # json or text
+  output: "stdout"        # stdout, stderr, or file path
+  fields:
+    app: "hallmonitor"
+    env: "development"
+
+monitoring:
+  defaultInterval: "30s"
+  defaultTimeout: "10s"
+
+  groups:
+    # Critical infrastructure services
+    - name: "critical-services"
+      interval: "10s"
+      monitors:
+        - type: "http"
+          name: "gitlab"
+          url: "https://git.example.com"
+          expectedStatus: 200
+          timeout: "5s"
+          enabled: true
+          labels:
+            severity: "critical"
+            team: "platform"
+
+        - type: "http"
+          name: "grafana"
+          url: "http://grafana.example.com"
+          expectedStatus: 200
+          enabled: true
+          labels:
+            severity: "critical"
+
+        - type: "ping"
+          name: "router"
+          target: "192.168.1.1"
+          count: 3
+          timeout: "3s"
+          enabled: true
+          labels:
+            device_type: "router"
+
+        - type: "tcp"
+          name: "server-ssh"
+          target: "192.168.1.100:22"
+          timeout: "5s"
+          enabled: true
+          labels:
+            service: "ssh"
+
+    # DNS infrastructure
+    - name: "other-services"
+      interval: "15s"
+      monitors:
+        - type: "dns"
+          name: "dns-server"
+          target: "192.168.1.1:53"
+          query: "google.com"
+          queryType: "A"
+          timeout: "3s"
+          enabled: true
+          labels:
+            dns_type: "primary"
+
+        - type: "http"
+          name: "plex"
+          url: "http://192.168.1.50:32400/web"
+          expectedStatus: 200
+          enabled: true
+          labels:
+            category: "media"
+
+        - type: "tcp"
+          name: "nas-ssh"
+          target: "192.168.1.50:22"
+          enabled: true
+          labels:
+            device_type: "nas"
+
+alerting:
+  enabled: false
+  evaluationInterval: "10s"
+  rules:
+    - name: "ServiceDown"
+      expr: "hallmonitor_monitor_up == 0"
+      for: "2m"
+      labels:
+        severity: "critical"
+      annotations:
+        summary: "Monitor {{.monitor}} is down"
+        description: "Monitor {{.monitor}} in group {{.group}} has been down for more than 2 minutes"
+
+    - name: "HighLatency"
+      expr: "hallmonitor_http_response_time_seconds > 5"
+      for: "5m"
+      labels:
+        severity: "warning"
+      annotations:
+        summary: "High latency detected for {{.monitor}}"
+
+webhooks:
+  - url: "${DISCORD_WEBHOOK}"
+    events: ["down", "recovered"]
+  - url: "${SLACK_WEBHOOK}"
+    events: ["down"]

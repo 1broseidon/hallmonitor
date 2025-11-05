@@ -1,0 +1,71 @@
+# Binaries
+hallmonitor
+hallmonitor-*
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test files
+*.test
+*.out
+coverage.out
+coverage.txt
+coverage.html
+
+# Environment and config files (keep locally but don't commit)
+.env
+.env.local
+.env.*.local
+config.yml
+config.yaml
+
+# Personal tool configs
+.promptext.yml
+
+# IDE and editor files
+.vscode/
+.idea/
+.cursor/
+.claude/
+*.swp
+*.swo
+*~
+.fleet/
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Build artifacts
+/tmp/
+/temp/
+/dist/
+/build/
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Go specific
+vendor/
+go.work
+go.work.sum
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+
+# Debug files
+debug
+debug.test
+*.pprof

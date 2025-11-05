@@ -1,0 +1,32 @@
+# Hall Monitor - Docker Compose Configuration
+# Simple deployment with Docker Compose
+#
+# Usage:
+#   docker compose up -d
+#
+# Customize with environment variables:
+#   CONFIG_FILE=./my-config.yml docker compose up -d
+#
+# To build locally instead of using the published image:
+#   docker compose build
+
+services:
+  hallmonitor:
+    image: ghcr.io/1broseidon/hallmonitor:latest
+    container_name: hallmonitor
+    volumes:
+      - ${CONFIG_FILE:-./config.example.yml}:/etc/hallmonitor/config.yml:ro
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - LOG_FORMAT=${LOG_FORMAT:-json}
+    network_mode: host
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:7878/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
