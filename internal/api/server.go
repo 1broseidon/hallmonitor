@@ -56,7 +56,7 @@ func NewServer(cfg *config.Config, logger *logging.Logger, prometheusReg prometh
 		ReadTimeout:           30 * time.Second,
 		WriteTimeout:          30 * time.Second,
 		IdleTimeout:           120 * time.Second,
-		ReadBufferSize:        8192, // 8KB buffer for request headers (increased from 4KB default to handle proxy headers)
+		ReadBufferSize:        16384, // 16KB buffer for request headers (mobile browsers + proxies can send large headers)
 	})
 
 	s := &Server{
