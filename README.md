@@ -1,5 +1,7 @@
 # Hall Monitor
 
+[![Codecov](https://codecov.io/gh/1broseidon/hallmonitor/branch/main/graph/badge.svg)](https://codecov.io/gh/1broseidon/hallmonitor)
+
 Lightweight network monitoring for home labs and Kubernetes clusters.
 
 Hall Monitor is a Go-based monitoring solution designed for home labs and cloud-native environments. It provides HTTP, TCP, DNS, and Ping monitoring with built-in Prometheus metrics export and a lightweight web dashboard.
@@ -278,6 +280,29 @@ Hall Monitor exposes Prometheus metrics at `/metrics`:
 - `hallmonitor_dns_response_time_seconds` - DNS query time
 - `hallmonitor_ping_response_time_seconds` - Ping round-trip time
 - `hallmonitor_tcp_response_time_seconds` - TCP connection time
+
+## Development
+
+### Hot-Reloading HTML Dashboard
+
+During development, you can enable hot-reloading for the HTML dashboard files. When `HALLMONITOR_DEV=true` is set, the server will serve HTML files directly from disk instead of embedded assets, allowing you to see changes in real-time without rebuilding.
+
+**Quick Start:**
+```bash
+# Using Make (recommended)
+make dev
+
+# Or manually
+HALLMONITOR_DEV=true go run cmd/server/main.go --config config.yml
+```
+
+**How it works:**
+- Set the `HALLMONITOR_DEV` environment variable to `true` or `1`
+- The server will look for HTML files in `internal/api/` directory
+- Changes to `dashboard.html` or `dashboard_ambient.html` will be reflected immediately on refresh
+- Falls back to embedded assets if files aren't found (useful for production)
+
+**Note:** This feature is development-only. Production builds always use embedded assets for better performance and portability.
 
 ## Contributing
 

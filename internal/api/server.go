@@ -34,9 +34,15 @@ type Server struct {
 	monitorManager *monitors.MonitorManager
 	scheduler      *scheduler.Scheduler
 	prometheusReg  prometheus.Registerer
+	storage        StorageCloser
 }
 
-// NewServer creates a new API server
+// StorageCloser interface for storage that needs cleanup
+type StorageCloser interface {
+	Close() error
+}
+
+// NewServer creates a new API server without persistent storage
 func NewServer(cfg *config.Config, logger *logging.Logger, prometheusReg prometheus.Registerer) *Server {
 	// Create metrics instance
 	metricsInstance := metrics.NewMetrics(prometheusReg)
@@ -44,7 +50,7 @@ func NewServer(cfg *config.Config, logger *logging.Logger, prometheusReg prometh
 	// Create monitor manager
 	monitorManager := monitors.NewMonitorManager(logger, metricsInstance)
 
-	// Create scheduler
+	// Create scheduler without storage
 	schedulerInstance := scheduler.NewScheduler(logger, metricsInstance, monitorManager)
 
 	// Create Fiber app with configuration
@@ -67,6 +73,49 @@ func NewServer(cfg *config.Config, logger *logging.Logger, prometheusReg prometh
 		monitorManager: monitorManager,
 		scheduler:      schedulerInstance,
 		prometheusReg:  prometheusReg,
+	}
+
+	// Setup middleware
+	s.setupMiddleware()
+
+	// Setup routes
+	s.setupRoutes()
+
+	return s
+}
+
+// NewServerWithStorage creates a new API server with persistent storage
+func NewServerWithStorage(cfg *config.Config, logger *logging.Logger, prometheusReg prometheus.Registerer, persistentStore scheduler.PersistentStore, aggregator scheduler.Aggregator, storage StorageCloser) *Server {
+	// Create metrics instance
+	metricsInstance := metrics.NewMetrics(prometheusReg)
+
+	// Create monitor manager
+	monitorManager := monitors.NewMonitorManager(logger, metricsInstance)
+
+	// Create scheduler with storage
+	schedulerInstance := scheduler.NewSchedulerWithStorage(logger, metricsInstance, monitorManager, persistentStore, aggregator)
+
+	// Create Fiber app with configuration
+	app := fiber.New(fiber.Config{
+		AppName:               "Hall Monitor v1.0",
+		DisableStartupMessage: false,
+		ServerHeader:          "HallMonitor",
+		ErrorHandler:          errorHandler(logger),
+		ReadTimeout:           30 * time.Second,
+		WriteTimeout:          30 * time.Second,
+		IdleTimeout:           120 * time.Second,
+		ReadBufferSize:        16384, // 16KB buffer for request headers (mobile browsers + proxies can send large headers)
+	})
+
+	s := &Server{
+		app:            app,
+		config:         cfg,
+		logger:         logger,
+		metrics:        metricsInstance,
+		monitorManager: monitorManager,
+		scheduler:      schedulerInstance,
+		prometheusReg:  prometheusReg,
+		storage:        storage,
 	}
 
 	// Setup middleware
@@ -127,6 +176,8 @@ func (s *Server) setupRoutes() {
 	// Monitor status endpoints
 	api.Get("/monitors", s.getMonitorsHandler)
 	api.Get("/monitors/:name", s.getMonitorHandler)
+	api.Get("/monitors/:name/history", s.getMonitorHistoryHandler)
+	api.Get("/monitors/:name/uptime", s.getMonitorUptimeHandler)
 	api.Get("/groups", s.getGroupsHandler)
 	api.Get("/groups/:name", s.getGroupHandler)
 
@@ -161,6 +212,16 @@ func (s *Server) Start() error {
 // Stop gracefully stops the server
 func (s *Server) Stop() error {
 	s.logger.WithComponent(logging.ComponentAPI).Info("Stopping HTTP server")
+	
+	// Close storage if present
+	if s.storage != nil {
+		if err := s.storage.Close(); err != nil {
+			s.logger.WithComponent(logging.ComponentAPI).
+				WithError(err).
+				Warn("Error closing storage")
+		}
+	}
+	
 	return s.app.Shutdown()
 }
 

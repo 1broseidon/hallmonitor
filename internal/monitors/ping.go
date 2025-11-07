@@ -13,12 +13,43 @@ import (
 	"github.com/1broseidon/hallmonitor/pkg/models"
 )
 
+type pinger interface {
+	Run() error
+	Stop()
+	SetPrivileged(bool)
+	Privileged() bool
+	SetCount(int)
+	SetTimeout(time.Duration)
+	Statistics() *probing.Statistics
+}
+
+type probingPinger struct {
+	*probing.Pinger
+}
+
+func (p *probingPinger) SetCount(count int) {
+	p.Pinger.Count = count
+}
+
+func (p *probingPinger) SetTimeout(timeout time.Duration) {
+	p.Pinger.Timeout = timeout
+}
+
+func defaultPingerFactory(target string) (pinger, error) {
+	p, err := probing.NewPinger(target)
+	if err != nil {
+		return nil, err
+	}
+	return &probingPinger{Pinger: p}, nil
+}
+
 // PingMonitor implements ICMP ping monitoring
 type PingMonitor struct {
 	*BaseMonitor
-	target net.IP
-	isIPv6 bool
-	count  int
+	target    net.IP
+	isIPv6    bool
+	count     int
+	newPinger func(string) (pinger, error)
 }
 
 // NewPingMonitor creates a new ping monitor
@@ -43,6 +74,7 @@ func NewPingMonitor(config *models.Monitor, group string, logger *logging.Logger
 		target:      ip.IP,
 		isIPv6:      isIPv6,
 		count:       count,
+		newPinger:   defaultPingerFactory,
 	}, nil
 }
 
@@ -102,14 +134,14 @@ func (p *PingMonitor) performPing(ctx context.Context) (*models.PingResult, erro
 	}
 
 	// Create pinger
-	pinger, err := probing.NewPinger(p.Config.Target)
+	pinger, err := p.newPinger(p.Config.Target)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create pinger: %w", err)
 	}
 
 	// Configure pinger
-	pinger.Count = p.count
-	pinger.Timeout = timeout
+	pinger.SetCount(p.count)
+	pinger.SetTimeout(timeout)
 
 	// Try privileged mode first (ICMP), fall back to unprivileged if needed
 	pinger.SetPrivileged(true)

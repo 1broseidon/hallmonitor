@@ -13,6 +13,7 @@ import (
 	"github.com/1broseidon/hallmonitor/internal/api"
 	"github.com/1broseidon/hallmonitor/internal/config"
 	"github.com/1broseidon/hallmonitor/internal/logging"
+	"github.com/1broseidon/hallmonitor/internal/storage"
 )
 
 func main() {
@@ -45,8 +46,36 @@ func main() {
 	// Create Prometheus registry
 	registry := prometheus.NewRegistry()
 
-	// Create and start the server
-	server := api.NewServer(cfg, logger, registry)
+	// Initialize storage if enabled
+	var server *api.Server
+	if cfg.Storage.Enabled {
+		logger.Info("Initializing persistent storage")
+
+		// Create BadgerDB store
+		badgerStore, err := storage.NewBadgerStore(cfg.Storage.Path, cfg.Storage.RetentionDays, logger)
+		if err != nil {
+			logger.WithError(err).Fatal("Failed to initialize storage")
+		}
+
+		// Create aggregator if enabled
+		var aggregator *storage.Aggregator
+		if cfg.Storage.EnableAggregation {
+			aggregator = storage.NewAggregator(badgerStore, logger)
+		}
+
+		// Create server with storage
+		server = api.NewServerWithStorage(cfg, logger, registry, badgerStore, aggregator, badgerStore)
+
+		logger.WithFields(map[string]interface{}{
+			"path":          cfg.Storage.Path,
+			"retentionDays": cfg.Storage.RetentionDays,
+			"aggregation":   cfg.Storage.EnableAggregation,
+		}).Info("Persistent storage enabled")
+	} else {
+		// Create server without storage
+		server = api.NewServer(cfg, logger, registry)
+		logger.Info("Running without persistent storage (data will be lost on restart)")
+	}
 
 	// Load monitors from configuration
 	if err := server.GetMonitorManager().LoadMonitors(cfg.Monitoring.Groups); err != nil {

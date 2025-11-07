@@ -2,11 +2,19 @@ package api
 
 import (
 	"bytes"
+	"fmt"
+	"net"
 	"net/http"
+	"net/url"
+	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+
+	"github.com/1broseidon/hallmonitor/internal/logging"
+	"github.com/1broseidon/hallmonitor/pkg/models"
 )
 
 // healthHandler handles health check requests
@@ -73,12 +81,72 @@ func (rw *responseWriter) Write(data []byte) (int, error) {
 	return rw.Buffer.Write(data)
 }
 
+// extractHostnameAndIP extracts hostname and IP address from a target or URL
+func extractHostnameAndIP(target, urlStr string) (hostname, ipAddr *string) {
+	var host string
+
+	// Try URL first
+	if urlStr != "" {
+		parsedURL, err := url.Parse(urlStr)
+		if err == nil && parsedURL.Host != "" {
+			host = parsedURL.Host
+			// Remove port if present
+			if idx := strings.Index(host, ":"); idx != -1 {
+				host = host[:idx]
+			}
+		}
+	}
+
+	// Fall back to target if no URL
+	if host == "" && target != "" {
+		// Check if target is in format "host:port" or "ip:port"
+		if idx := strings.Index(target, ":"); idx != -1 {
+			host = target[:idx]
+		} else {
+			host = target
+		}
+	}
+
+	if host == "" {
+		return nil, nil
+	}
+
+	// Check if host is already an IP address
+	if net.ParseIP(host) != nil {
+		ipAddr = &host
+		return nil, ipAddr
+	}
+
+	// It's a hostname
+	hostname = &host
+
+	// Try to resolve to IP (non-blocking, best effort)
+	if ips, err := net.LookupIP(host); err == nil && len(ips) > 0 {
+		// Prefer IPv4
+		for _, ip := range ips {
+			if ip.To4() != nil {
+				ipStr := ip.String()
+				ipAddr = &ipStr
+				break
+			}
+		}
+		// Fall back to IPv6 if no IPv4
+		if ipAddr == nil && len(ips) > 0 {
+			ipStr := ips[0].String()
+			ipAddr = &ipStr
+		}
+	}
+
+	return hostname, ipAddr
+}
+
 // getMonitorsHandler returns all monitor statuses
 func (s *Server) getMonitorsHandler(c *fiber.Ctx) error {
 	monitors := s.monitorManager.GetMonitors()
 
 	var results []MonitorStatus
 	for _, monitor := range monitors {
+		config := monitor.GetConfig()
 		status := MonitorStatus{
 			Name:    monitor.GetName(),
 			Type:    string(monitor.GetType()),
@@ -86,6 +154,51 @@ func (s *Server) getMonitorsHandler(c *fiber.Ctx) error {
 			Enabled: monitor.IsEnabled(),
 			Status:  "unknown",
 		}
+
+		// Add configuration details
+		if config.Target != "" {
+			status.Target = &config.Target
+		}
+		if config.URL != "" {
+			status.URL = &config.URL
+		}
+		if config.Query != "" {
+			status.Query = &config.Query
+		}
+		if config.QueryType != "" {
+			status.QueryType = &config.QueryType
+		}
+		if config.Interval > 0 {
+			intervalStr := config.Interval.String()
+			status.Interval = &intervalStr
+		}
+		if config.Timeout > 0 {
+			timeoutStr := config.Timeout.String()
+			status.Timeout = &timeoutStr
+		}
+		if config.Port > 0 {
+			status.Port = &config.Port
+		}
+		if config.Count > 0 {
+			status.Count = &config.Count
+		}
+		if config.ExpectedStatus > 0 {
+			status.ExpectedStatus = &config.ExpectedStatus
+		}
+		if config.ExpectedResponse != "" {
+			status.ExpectedResponse = &config.ExpectedResponse
+		}
+		if len(config.Headers) > 0 {
+			status.Headers = config.Headers
+		}
+		if len(config.Labels) > 0 {
+			status.Labels = config.Labels
+		}
+
+		// Extract hostname and IP address
+		hostname, ipAddr := extractHostnameAndIP(config.Target, config.URL)
+		status.Hostname = hostname
+		status.IPAddress = ipAddr
 
 		// Get latest result from scheduler
 		if latestResult := s.scheduler.GetLatestResult(monitor.GetName()); latestResult != nil {
@@ -98,6 +211,20 @@ func (s *Server) getMonitorsHandler(c *fiber.Ctx) error {
 				status.Error = &latestResult.Error
 			}
 			status.Metadata = latestResult.Metadata
+
+			// Add type-specific result data
+			if latestResult.HTTPResult != nil {
+				status.HTTPResult = latestResult.HTTPResult
+			}
+			if latestResult.PingResult != nil {
+				status.PingResult = latestResult.PingResult
+			}
+			if latestResult.TCPResult != nil {
+				status.TCPResult = latestResult.TCPResult
+			}
+			if latestResult.DNSResult != nil {
+				status.DNSResult = latestResult.DNSResult
+			}
 		}
 
 		results = append(results, status)
@@ -121,6 +248,7 @@ func (s *Server) getMonitorHandler(c *fiber.Ctx) error {
 		})
 	}
 
+	config := monitor.GetConfig()
 	status := MonitorStatus{
 		Name:    monitor.GetName(),
 		Type:    string(monitor.GetType()),
@@ -128,6 +256,51 @@ func (s *Server) getMonitorHandler(c *fiber.Ctx) error {
 		Enabled: monitor.IsEnabled(),
 		Status:  "unknown",
 	}
+
+	// Add configuration details
+	if config.Target != "" {
+		status.Target = &config.Target
+	}
+	if config.URL != "" {
+		status.URL = &config.URL
+	}
+	if config.Query != "" {
+		status.Query = &config.Query
+	}
+	if config.QueryType != "" {
+		status.QueryType = &config.QueryType
+	}
+	if config.Interval > 0 {
+		intervalStr := config.Interval.String()
+		status.Interval = &intervalStr
+	}
+	if config.Timeout > 0 {
+		timeoutStr := config.Timeout.String()
+		status.Timeout = &timeoutStr
+	}
+	if config.Port > 0 {
+		status.Port = &config.Port
+	}
+	if config.Count > 0 {
+		status.Count = &config.Count
+	}
+	if config.ExpectedStatus > 0 {
+		status.ExpectedStatus = &config.ExpectedStatus
+	}
+	if config.ExpectedResponse != "" {
+		status.ExpectedResponse = &config.ExpectedResponse
+	}
+	if len(config.Headers) > 0 {
+		status.Headers = config.Headers
+	}
+	if len(config.Labels) > 0 {
+		status.Labels = config.Labels
+	}
+
+	// Extract hostname and IP address
+	hostname, ipAddr := extractHostnameAndIP(config.Target, config.URL)
+	status.Hostname = hostname
+	status.IPAddress = ipAddr
 
 	// Get latest result from scheduler
 	if latestResult := s.scheduler.GetLatestResult(monitor.GetName()); latestResult != nil {
@@ -140,6 +313,20 @@ func (s *Server) getMonitorHandler(c *fiber.Ctx) error {
 			status.Error = &latestResult.Error
 		}
 		status.Metadata = latestResult.Metadata
+
+		// Add type-specific result data
+		if latestResult.HTTPResult != nil {
+			status.HTTPResult = latestResult.HTTPResult
+		}
+		if latestResult.PingResult != nil {
+			status.PingResult = latestResult.PingResult
+		}
+		if latestResult.TCPResult != nil {
+			status.TCPResult = latestResult.TCPResult
+		}
+		if latestResult.DNSResult != nil {
+			status.DNSResult = latestResult.DNSResult
+		}
 	}
 
 	return c.JSON(status)
@@ -294,6 +481,30 @@ type MonitorStatus struct {
 	Duration  *string     `json:"duration,omitempty"`
 	Error     *string     `json:"error,omitempty"`
 	Metadata  interface{} `json:"metadata,omitempty"`
+
+	// Configuration details
+	Target           *string           `json:"target,omitempty"`
+	URL              *string           `json:"url,omitempty"`
+	Query            *string           `json:"query,omitempty"`
+	QueryType        *string           `json:"query_type,omitempty"`
+	Interval         *string           `json:"interval,omitempty"`
+	Timeout          *string           `json:"timeout,omitempty"`
+	Port             *int              `json:"port,omitempty"`
+	Count            *int              `json:"count,omitempty"`
+	ExpectedStatus   *int              `json:"expected_status,omitempty"`
+	ExpectedResponse *string           `json:"expected_response,omitempty"`
+	Headers          map[string]string `json:"headers,omitempty"`
+	Labels           map[string]string `json:"labels,omitempty"`
+
+	// Extracted/derived fields for easier frontend consumption
+	Hostname  *string `json:"hostname,omitempty"`
+	IPAddress *string `json:"ip_address,omitempty"`
+
+	// Result-specific data
+	HTTPResult interface{} `json:"http_result,omitempty"`
+	PingResult interface{} `json:"ping_result,omitempty"`
+	TCPResult  interface{} `json:"tcp_result,omitempty"`
+	DNSResult  interface{} `json:"dns_result,omitempty"`
 }
 
 // GroupStatus represents the status of a monitor group
@@ -302,4 +513,135 @@ type GroupStatus struct {
 	Monitors int     `json:"monitors"`
 	Status   string  `json:"status"`
 	Uptime   *string `json:"uptime,omitempty"`
+}
+
+// getMonitorHistoryHandler returns historical results for a monitor
+func (s *Server) getMonitorHistoryHandler(c *fiber.Ctx) error {
+	monitorName := c.Params("name")
+
+	// Parse query parameters
+	startStr := c.Query("start")
+	endStr := c.Query("end")
+	limitStr := c.Query("limit", "100")
+
+	// Parse limit
+	var limit int
+	if _, err := fmt.Sscanf(limitStr, "%d", &limit); err != nil || limit <= 0 {
+		limit = 100
+	}
+	if limit > 10000 {
+		limit = 10000 // cap at 10000
+	}
+
+	// Parse timestamps
+	var start, end time.Time
+	var err error
+
+	if startStr != "" {
+		start, err = time.Parse(time.RFC3339, startStr)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error":   true,
+				"message": "Invalid start timestamp format (use RFC3339)",
+			})
+		}
+	} else {
+		// Default: last 24 hours
+		start = time.Now().Add(-24 * time.Hour)
+	}
+
+	if endStr != "" {
+		end, err = time.Parse(time.RFC3339, endStr)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error":   true,
+				"message": "Invalid end timestamp format (use RFC3339)",
+			})
+		}
+	} else {
+		end = time.Now()
+	}
+
+	// Validate time range
+	if end.Before(start) {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error":   true,
+			"message": "End time must be after start time",
+		})
+	}
+
+	// Get historical results
+	results, err := s.scheduler.GetHistoricalResults(monitorName, start, end, limit)
+	if err != nil {
+		s.logger.WithComponent(logging.ComponentAPI).
+			WithError(err).
+			Error("Failed to get historical results")
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":   true,
+			"message": "Failed to retrieve historical data",
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"monitor": monitorName,
+		"start":   start.Format(time.RFC3339),
+		"end":     end.Format(time.RFC3339),
+		"results": results,
+		"total":   len(results),
+	})
+}
+
+// getMonitorUptimeHandler returns uptime percentage for a monitor
+func (s *Server) getMonitorUptimeHandler(c *fiber.Ctx) error {
+	monitorName := c.Params("name")
+	periodStr := c.Query("period", "24h")
+
+	// Parse period
+	period, err := time.ParseDuration(periodStr)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error":   true,
+			"message": "Invalid period format (use duration like 24h, 7d, 30d)",
+		})
+	}
+
+	// Get results for the period
+	start := time.Now().Add(-period)
+	end := time.Now()
+
+	results, err := s.scheduler.GetHistoricalResults(monitorName, start, end, 100000)
+	if err != nil {
+		s.logger.WithComponent(logging.ComponentAPI).
+			WithError(err).
+			Error("Failed to get historical results for uptime")
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":   true,
+			"message": "Failed to calculate uptime",
+		})
+	}
+
+	// Calculate uptime
+	totalChecks := len(results)
+	upChecks := 0
+	for _, result := range results {
+		if result.Status == models.StatusUp {
+			upChecks++
+		}
+	}
+
+	uptimePercent := 0.0
+	if totalChecks > 0 {
+		uptimePercent = float64(upChecks) / float64(totalChecks) * 100.0
+	}
+
+	return c.JSON(fiber.Map{
+		"monitor":        monitorName,
+		"period":         periodStr,
+		"start":          start.Format(time.RFC3339),
+		"end":            end.Format(time.RFC3339),
+		"total_checks":   totalChecks,
+		"up_checks":      upChecks,
+		"down_checks":    totalChecks - upChecks,
+		"uptime_percent": uptimePercent,
+	})
 }

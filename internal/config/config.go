@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/spf13/viper"
@@ -15,6 +16,7 @@ type Config struct {
 	Metrics    MetricsConfig    `yaml:"metrics" mapstructure:"metrics"`
 	Logging    LoggingConfig    `yaml:"logging" mapstructure:"logging"`
 	Monitoring MonitoringConfig `yaml:"monitoring" mapstructure:"monitoring"`
+	Storage    StorageConfig    `yaml:"storage" mapstructure:"storage"`
 	Alerting   AlertingConfig   `yaml:"alerting" mapstructure:"alerting"`
 	Webhooks   []WebhookConfig  `yaml:"webhooks" mapstructure:"webhooks"`
 }
@@ -49,6 +51,14 @@ type MonitoringConfig struct {
 	DefaultTimeout                  time.Duration         `yaml:"defaultTimeout" mapstructure:"defaultTimeout"`
 	DefaultSSLCertExpiryWarningDays int                   `yaml:"defaultSSLCertExpiryWarningDays" mapstructure:"defaultSSLCertExpiryWarningDays"`
 	Groups                          []models.MonitorGroup `yaml:"groups" mapstructure:"groups"`
+}
+
+// StorageConfig contains persistent storage configuration
+type StorageConfig struct {
+	Enabled           bool   `yaml:"enabled" mapstructure:"enabled"`
+	Path              string `yaml:"path" mapstructure:"path"`
+	RetentionDays     int    `yaml:"retentionDays" mapstructure:"retentionDays"`
+	EnableAggregation bool   `yaml:"enableAggregation" mapstructure:"enableAggregation"`
 }
 
 // AlertingConfig contains alerting configuration
@@ -92,10 +102,15 @@ func LoadConfig(configPath string) (*Config, error) {
 	v.SetDefault("monitoring.defaultInterval", "30s")
 	v.SetDefault("monitoring.defaultTimeout", "10s")
 	v.SetDefault("monitoring.defaultSSLCertExpiryWarningDays", 30)
+	v.SetDefault("storage.enabled", true)
+	v.SetDefault("storage.path", "./data/hallmonitor.db")
+	v.SetDefault("storage.retentionDays", 30)
+	v.SetDefault("storage.enableAggregation", true)
 	v.SetDefault("alerting.enabled", false)
 	v.SetDefault("alerting.evaluationInterval", "10s")
 
 	// Enable environment variable substitution
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	v.AutomaticEnv()
 
 	// Set config file

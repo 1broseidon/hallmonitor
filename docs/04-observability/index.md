@@ -7,9 +7,10 @@ Hall Monitor provides comprehensive observability through metrics, dashboards, a
 Hall Monitor offers multiple ways to observe your monitoring infrastructure:
 
 1. **Built-in Dashboard** - Lightweight web UI for quick visibility
-2. **Prometheus Metrics** - Standard metrics export for long-term storage
-3. **Grafana Integration** - Rich visualization and alerting
-4. **Webhooks** - Event notifications to external systems
+2. **Persistent Storage** - Historical data and uptime tracking
+3. **Prometheus Metrics** - Standard metrics export for long-term storage
+4. **Grafana Integration** - Rich visualization and alerting
+5. **Webhooks** - Event notifications to external systems
 
 ## Built-in Dashboard
 
@@ -32,6 +33,38 @@ http://localhost:7878/
 ```
 
 See [Dashboard Documentation](./dashboard.md) for details.
+
+## Persistent Storage
+
+Hall Monitor can store monitoring results persistently using BadgerDB, enabling historical data analysis across restarts.
+
+### Features
+
+- Historical uptime tracking
+- Multi-period statistics (24h, 7d, 30d)
+- Automatic data aggregation
+- Configurable retention periods
+- API endpoints for historical queries
+
+### Configuration
+
+```yaml
+storage:
+  enabled: true
+  path: "./data/hallmonitor.db"
+  retentionDays: 30
+  enableAggregation: true
+```
+
+### Historical API
+
+Query historical results:
+```bash
+GET /api/v1/monitors/:name/history?start=<timestamp>&end=<timestamp>
+GET /api/v1/monitors/:name/uptime?period=<duration>
+```
+
+See [Storage Documentation](./storage.md) for details.
 
 ## Prometheus Metrics
 
@@ -201,6 +234,7 @@ Create dashboards by:
 
 ## Next Steps
 
+- [Storage Documentation](./storage.md) - Persistent historical data
 - [Metrics Reference](./metrics.md) - Complete metric documentation
 - [Dashboard Guide](./dashboard.md) - Built-in dashboard features
 - Set up your own Grafana with Prometheus data source

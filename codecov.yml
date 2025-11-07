@@ -1,0 +1,18 @@
+coverage:
+  status:
+    project:
+      default:
+        target: 0.8
+        threshold: 2%
+    patch:
+      default:
+        target: 0.8
+        threshold: 5%
+
+ignore:
+  - "docs/**"
+  - "k8s/**"
+  - "scripts/**"
+  - "config.example.yml"
+  - "config.yml"
+

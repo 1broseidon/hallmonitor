@@ -19,13 +19,20 @@ type Scheduler struct {
 	resultStore    *ResultStore
 	workers        *WorkerPool
 	backoff        *BackoffManager
+	aggregator     Aggregator
 	stopChan       chan struct{}
 	wg             sync.WaitGroup
 	running        bool
 	mu             sync.RWMutex
 }
 
-// NewScheduler creates a new scheduler instance
+// Aggregator interface for data aggregation
+type Aggregator interface {
+	Start(ctx context.Context) error
+	Stop() error
+}
+
+// NewScheduler creates a new scheduler instance without persistent storage
 func NewScheduler(logger *logging.Logger, metrics *metrics.Metrics, monitorManager *monitors.MonitorManager) *Scheduler {
 	return &Scheduler{
 		logger:         logger,
@@ -34,6 +41,21 @@ func NewScheduler(logger *logging.Logger, metrics *metrics.Metrics, monitorManag
 		resultStore:    NewResultStore(1000),               // Keep last 1000 results per monitor
 		workers:        NewWorkerPool(10, logger, metrics), // 10 concurrent workers
 		backoff:        NewBackoffManager(),
+		stopChan:       make(chan struct{}),
+		running:        false,
+	}
+}
+
+// NewSchedulerWithStorage creates a new scheduler instance with persistent storage
+func NewSchedulerWithStorage(logger *logging.Logger, metrics *metrics.Metrics, monitorManager *monitors.MonitorManager, persistentStore PersistentStore, aggregator Aggregator) *Scheduler {
+	return &Scheduler{
+		logger:         logger,
+		metrics:        metrics,
+		monitorManager: monitorManager,
+		resultStore:    NewResultStoreWithPersistence(1000, persistentStore), // Keep last 1000 results per monitor with persistence
+		workers:        NewWorkerPool(10, logger, metrics),                   // 10 concurrent workers
+		backoff:        NewBackoffManager(),
+		aggregator:     aggregator,
 		stopChan:       make(chan struct{}),
 		running:        false,
 	}
@@ -52,6 +74,16 @@ func (s *Scheduler) Start(ctx context.Context) error {
 
 	// Start worker pool
 	s.workers.Start(ctx)
+
+	// Start aggregator if available
+	if s.aggregator != nil {
+		if err := s.aggregator.Start(ctx); err != nil {
+			s.logger.WithComponent(logging.ComponentScheduler).
+				WithError(err).
+				Error("Failed to start aggregator")
+			// Continue anyway - aggregation is not critical for monitoring
+		}
+	}
 
 	// Start scheduling goroutine
 	s.wg.Add(1)
@@ -74,6 +106,15 @@ func (s *Scheduler) Stop() error {
 
 	// Signal stop
 	close(s.stopChan)
+
+	// Stop aggregator if available
+	if s.aggregator != nil {
+		if err := s.aggregator.Stop(); err != nil {
+			s.logger.WithComponent(logging.ComponentScheduler).
+				WithError(err).
+				Warn("Error stopping aggregator")
+		}
+	}
 
 	// Stop worker pool
 	s.workers.Stop()
@@ -117,6 +158,11 @@ func (s *Scheduler) GetAllLatestResults() map[string]*models.MonitorResult {
 	}
 
 	return results
+}
+
+// GetHistoricalResults returns historical results for a monitor
+func (s *Scheduler) GetHistoricalResults(monitorName string, start, end time.Time, limit int) ([]*models.MonitorResult, error) {
+	return s.resultStore.GetHistoricalResults(monitorName, start, end, limit)
 }
 
 // schedulingLoop is the main scheduling loop

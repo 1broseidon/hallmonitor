@@ -1,15 +1,21 @@
 package api
 
 import (
+	"encoding/json"
 	"io"
 	"net/http/httptest"
+	"reflect"
 	"testing"
+	"time"
+	"unsafe"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/1broseidon/hallmonitor/internal/config"
 	"github.com/1broseidon/hallmonitor/internal/logging"
+	"github.com/1broseidon/hallmonitor/internal/scheduler"
+	"github.com/1broseidon/hallmonitor/pkg/models"
 )
 
 func createTestServer(t *testing.T) *Server {
@@ -39,6 +45,27 @@ func createTestServer(t *testing.T) *Server {
 	// Create server (NewServer creates its own scheduler, monitor manager, etc.)
 	server := NewServer(cfg, logger, reg)
 	return server
+}
+
+func loadMonitors(t *testing.T, server *Server, groups []models.MonitorGroup) {
+	t.Helper()
+
+	if err := server.monitorManager.LoadMonitors(groups); err != nil {
+		t.Fatalf("failed to load monitors: %v", err)
+	}
+}
+
+func storeResult(t *testing.T, server *Server, result *models.MonitorResult) {
+	t.Helper()
+
+	if result == nil {
+		t.Fatalf("result cannot be nil")
+	}
+
+	value := reflect.ValueOf(server.scheduler).Elem()
+	field := value.FieldByName("resultStore")
+	resultStore := reflect.NewAt(field.Type(), unsafe.Pointer(field.UnsafeAddr())).Elem().Interface().(*scheduler.ResultStore)
+	resultStore.StoreResult(result.Monitor, result)
 }
 
 func TestHealthHandler(t *testing.T) {
@@ -156,6 +183,69 @@ func TestGetMonitorsHandler(t *testing.T) {
 	}
 }
 
+func TestGetMonitorsHandlerIncludesSchedulerData(t *testing.T) {
+	server := createTestServer(t)
+	defer server.app.Shutdown()
+
+	enabled := true
+	loadMonitors(t, server, []models.MonitorGroup{
+		{
+			Name: "core",
+			Monitors: []models.Monitor{
+				{Type: models.MonitorTypeHTTP, Name: "homepage", URL: "https://example.com", Enabled: &enabled},
+				{Type: models.MonitorTypeHTTP, Name: "status", URL: "https://status.example.com", Enabled: &enabled},
+			},
+		},
+	})
+
+	now := time.Now().UTC().Truncate(time.Second)
+	storeResult(t, server, &models.MonitorResult{Monitor: "homepage", Type: models.MonitorTypeHTTP, Group: "core", Status: models.StatusUp, Duration: 250 * time.Millisecond, Timestamp: now})
+	storeResult(t, server, &models.MonitorResult{Monitor: "status", Type: models.MonitorTypeHTTP, Group: "core", Status: models.StatusDown, Duration: 500 * time.Millisecond, Error: "http 500", Timestamp: now})
+
+	req := httptest.NewRequest("GET", "/api/v1/monitors", nil)
+	resp, err := server.app.Test(req, -1)
+	if err != nil {
+		t.Fatalf("request failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != fiber.StatusOK {
+		t.Fatalf("expected status 200, got %d", resp.StatusCode)
+	}
+
+	var payload map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+
+	monitorsSlice, ok := payload["monitors"].([]interface{})
+	if !ok || len(monitorsSlice) != 2 {
+		t.Fatalf("expected two monitors in response, got %v", payload["monitors"])
+	}
+
+	statusByName := make(map[string]string)
+	for _, item := range monitorsSlice {
+		monitorMap, ok := item.(map[string]interface{})
+		if !ok {
+			t.Fatalf("unexpected monitor payload type: %T", item)
+		}
+		name := monitorMap["name"].(string)
+		statusByName[name] = monitorMap["status"].(string)
+	}
+
+	if statusByName["homepage"] != "up" {
+		t.Fatalf("expected homepage status 'up', got %s", statusByName["homepage"])
+	}
+
+	if statusByName["status"] != "down" {
+		t.Fatalf("expected status monitor to be 'down', got %s", statusByName["status"])
+	}
+
+	if total, ok := payload["total"].(float64); !ok || int(total) != 2 {
+		t.Fatalf("expected total 2, got %v", payload["total"])
+	}
+}
+
 func TestGetMonitorHandlerNotFound(t *testing.T) {
 	server := createTestServer(t)
 	defer server.app.Shutdown()
@@ -182,6 +272,79 @@ func TestGetMonitorHandlerNotFound(t *testing.T) {
 	}
 }
 
+func TestGetMonitorHandlerReturnsDetailedStatus(t *testing.T) {
+	server := createTestServer(t)
+	defer server.app.Shutdown()
+
+	enabled := true
+	loadMonitors(t, server, []models.MonitorGroup{
+		{
+			Name: "core",
+			Monitors: []models.Monitor{
+				{
+					Type:    models.MonitorTypeHTTP,
+					Name:    "homepage",
+					URL:     "https://example.com",
+					Enabled: &enabled,
+				},
+			},
+		},
+	})
+
+	timestamp := time.Now().UTC().Truncate(time.Second)
+	duration := 1500 * time.Millisecond
+
+	storeResult(t, server, &models.MonitorResult{
+		Monitor:   "homepage",
+		Type:      models.MonitorTypeHTTP,
+		Group:     "core",
+		Status:    models.StatusDown,
+		Duration:  duration,
+		Error:     "timeout exceeded",
+		Timestamp: timestamp,
+		Metadata: map[string]string{
+			"latency": "120ms",
+		},
+	})
+
+	req := httptest.NewRequest("GET", "/api/v1/monitors/homepage", nil)
+	resp, err := server.app.Test(req, -1)
+	if err != nil {
+		t.Fatalf("request failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != fiber.StatusOK {
+		t.Fatalf("expected status 200, got %d", resp.StatusCode)
+	}
+
+	var payload map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+
+	if payload["status"] != "down" {
+		t.Fatalf("expected status 'down', got %v", payload["status"])
+	}
+
+	if payload["duration"] != duration.String() {
+		t.Fatalf("expected duration %s, got %v", duration.String(), payload["duration"])
+	}
+
+	if payload["error"] != "timeout exceeded" {
+		t.Fatalf("expected error message, got %v", payload["error"])
+	}
+
+	expectedTimestamp := timestamp.Format("2006-01-02T15:04:05Z07:00")
+	if payload["last_check"] != expectedTimestamp {
+		t.Fatalf("expected last_check %s, got %v", expectedTimestamp, payload["last_check"])
+	}
+
+	if payload["metadata"] == nil {
+		t.Fatalf("expected metadata to be present")
+	}
+}
+
 func TestGetGroupsHandler(t *testing.T) {
 	server := createTestServer(t)
 	defer server.app.Shutdown()
@@ -205,6 +368,68 @@ func TestGetGroupsHandler(t *testing.T) {
 	bodyStr := string(body)
 	if !contains(bodyStr, "groups") {
 		t.Fatalf("response missing expected fields: %s", bodyStr)
+	}
+}
+
+func TestGetGroupHandlerReturnsMonitors(t *testing.T) {
+	server := createTestServer(t)
+	defer server.app.Shutdown()
+
+	enabled := true
+	loadMonitors(t, server, []models.MonitorGroup{
+		{
+			Name: "core",
+			Monitors: []models.Monitor{
+				{Type: models.MonitorTypeHTTP, Name: "homepage", URL: "https://example.com", Enabled: &enabled},
+			},
+		},
+	})
+
+	storeResult(t, server, &models.MonitorResult{
+		Monitor:   "homepage",
+		Type:      models.MonitorTypeHTTP,
+		Group:     "core",
+		Status:    models.StatusUp,
+		Duration:  100 * time.Millisecond,
+		Timestamp: time.Now().UTC(),
+	})
+
+	req := httptest.NewRequest("GET", "/api/v1/groups/core", nil)
+	resp, err := server.app.Test(req, -1)
+	if err != nil {
+		t.Fatalf("request failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != fiber.StatusOK {
+		t.Fatalf("expected status 200, got %d", resp.StatusCode)
+	}
+
+	var payload struct {
+		Group struct {
+			Name   string `json:"name"`
+			Status string `json:"status"`
+		} `json:"group"`
+		Monitors []struct {
+			Name   string `json:"name"`
+			Status string `json:"status"`
+		} `json:"monitors"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+
+	if payload.Group.Name != "core" {
+		t.Fatalf("expected group name 'core', got %s", payload.Group.Name)
+	}
+
+	if len(payload.Monitors) != 1 || payload.Monitors[0].Name != "homepage" {
+		t.Fatalf("expected single monitor 'homepage', got %+v", payload.Monitors)
+	}
+
+	if payload.Monitors[0].Status != "up" {
+		t.Fatalf("expected monitor status 'up', got %s", payload.Monitors[0].Status)
 	}
 }
 
@@ -247,6 +472,31 @@ func TestGetConfigHandler(t *testing.T) {
 	bodyStr := string(body)
 	if bodyStr == "" {
 		t.Fatalf("expected non-empty config response")
+	}
+}
+
+func TestReloadConfigHandler(t *testing.T) {
+	server := createTestServer(t)
+	defer server.app.Shutdown()
+
+	req := httptest.NewRequest("POST", "/api/v1/reload", nil)
+	resp, err := server.app.Test(req, -1)
+	if err != nil {
+		t.Fatalf("request failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != fiber.StatusOK {
+		t.Fatalf("expected status 200, got %d", resp.StatusCode)
+	}
+
+	var payload map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+
+	if payload["status"] != "pending" {
+		t.Fatalf("expected status 'pending', got %v", payload["status"])
 	}
 }
 

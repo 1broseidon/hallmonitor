@@ -115,3 +115,18 @@ type DNSResult struct {
 	Answers      []string      `json:"answers,omitempty"`
 	ResponseSize int           `json:"response_size"`
 }
+
+// AggregateResult represents aggregated monitoring data over a time period
+type AggregateResult struct {
+	Monitor       string        `json:"monitor"`
+	PeriodStart   time.Time     `json:"period_start"`
+	PeriodEnd     time.Time     `json:"period_end"`
+	PeriodType    string        `json:"period_type"` // "hour" or "day"
+	TotalChecks   int           `json:"total_checks"`
+	UpChecks      int           `json:"up_checks"`
+	DownChecks    int           `json:"down_checks"`
+	UptimePercent float64       `json:"uptime_percent"`
+	AvgDuration   time.Duration `json:"avg_duration"`
+	MinDuration   time.Duration `json:"min_duration"`
+	MaxDuration   time.Duration `json:"max_duration"`
+}

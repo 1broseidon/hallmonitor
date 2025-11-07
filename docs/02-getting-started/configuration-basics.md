@@ -11,6 +11,7 @@ server:           # Server settings (port, host, dashboard)
 metrics:          # Prometheus metrics configuration
 logging:          # Log level, format, output
 monitoring:       # Monitor groups and checks
+storage:          # Persistent storage (optional)
 alerting:         # Alert rules (optional)
 webhooks:         # Webhook notifications (optional)
 ```
@@ -86,6 +87,26 @@ metrics:
   includeProcessMetrics: true       # Include Go process metrics
   includeGoMetrics: true            # Include Go runtime metrics
 ```
+
+## Storage Configuration
+
+Configure persistent storage for historical data:
+
+```yaml
+storage:
+  enabled: true                     # Enable persistent storage
+  path: "./data/hallmonitor.db"    # Database file path
+  retentionDays: 30                 # Days to retain data (7, 30, 90, or custom)
+  enableAggregation: true           # Enable hourly/daily aggregation
+```
+
+When storage is enabled:
+- Monitor results persist across restarts
+- Historical data viewable in dashboards
+- API endpoints available for historical queries
+- Automatic data expiration based on retention period
+
+See [Storage Documentation](../04-observability/storage.md) for details.
 
 ## Monitoring Configuration
 

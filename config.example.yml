@@ -26,6 +26,12 @@ monitoring:
   defaultInterval: "30s"
   defaultTimeout: "10s"
 
+storage:
+  enabled: true
+  path: "./data/hallmonitor.db"
+  retentionDays: 30  # Options: 7, 30, 90 or any positive number
+  enableAggregation: true
+
   groups:
     # Critical infrastructure services
     - name: "critical-services"

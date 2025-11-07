@@ -8,11 +8,19 @@ import (
 	"github.com/1broseidon/hallmonitor/pkg/models"
 )
 
-// ResultStore manages monitor results in memory with circular buffer behavior
+// PersistentStore interface for persistent storage backend
+type PersistentStore interface {
+	StoreResult(result *models.MonitorResult) error
+	GetLatestResult(monitor string) (*models.MonitorResult, error)
+	GetResults(monitor string, start, end time.Time, limit int) ([]*models.MonitorResult, error)
+}
+
+// ResultStore manages monitor results in memory with optional persistent backend
 type ResultStore struct {
-	maxResults int
-	results    map[string]*MonitorResults
-	mu         sync.RWMutex
+	maxResults      int
+	results         map[string]*MonitorResults
+	mu              sync.RWMutex
+	persistentStore PersistentStore // Optional BadgerDB backend
 }
 
 // MonitorResults holds results for a specific monitor
@@ -34,11 +42,24 @@ func NewResultStore(maxResults int) *ResultStore {
 	}
 }
 
-// StoreResult stores a monitor result
-func (rs *ResultStore) StoreResult(monitorName string, result *models.MonitorResult) {
-	rs.mu.Lock()
-	defer rs.mu.Unlock()
+// NewResultStoreWithPersistence creates a new result store with persistent backend
+func NewResultStoreWithPersistence(maxResults int, persistentStore PersistentStore) *ResultStore {
+	if maxResults <= 0 {
+		maxResults = 100 // Default size
+	}
 
+	return &ResultStore{
+		maxResults:      maxResults,
+		results:         make(map[string]*MonitorResults),
+		persistentStore: persistentStore,
+	}
+}
+
+// StoreResult stores a monitor result in memory and optionally to persistent storage
+func (rs *ResultStore) StoreResult(monitorName string, result *models.MonitorResult) {
+	// Store in memory
+	rs.mu.Lock()
+	
 	// Get or create monitor results
 	monitorResults, exists := rs.results[monitorName]
 	if !exists {
@@ -57,6 +78,20 @@ func (rs *ResultStore) StoreResult(monitorName string, result *models.MonitorRes
 	// Update count (capped at maxResults)
 	if monitorResults.Count < rs.maxResults {
 		monitorResults.Count++
+	}
+	
+	rs.mu.Unlock()
+
+	// Store to persistent storage (if available) - do this outside the lock to avoid blocking
+	if rs.persistentStore != nil {
+		// Fire and forget - we don't want to slow down the monitoring
+		go func() {
+			if err := rs.persistentStore.StoreResult(result); err != nil {
+				// Log error but don't fail the operation
+				// The logger would need to be passed in, but for now we silently ignore
+				// This could be improved by adding a logger to the ResultStore
+			}
+		}()
 	}
 }
 
@@ -92,10 +127,20 @@ func (rs *ResultStore) GetResults(monitorName string, limit int) []*models.Monit
 
 // GetLatestResult returns the most recent result for a monitor
 func (rs *ResultStore) GetLatestResult(monitorName string) *models.MonitorResult {
+	// Try memory first
 	results := rs.GetResults(monitorName, 1)
 	if len(results) > 0 {
 		return results[0]
 	}
+
+	// Fallback to persistent storage if available
+	if rs.persistentStore != nil {
+		result, err := rs.persistentStore.GetLatestResult(monitorName)
+		if err == nil && result != nil {
+			return result
+		}
+	}
+
 	return nil
 }
 
@@ -246,6 +291,16 @@ func (rs *ResultStore) GetUptime(monitorName string, period time.Duration) float
 	}
 
 	return float64(up) / float64(total) * 100.0
+}
+
+// GetHistoricalResults retrieves results from persistent storage for a time range
+func (rs *ResultStore) GetHistoricalResults(monitorName string, start, end time.Time, limit int) ([]*models.MonitorResult, error) {
+	if rs.persistentStore == nil {
+		// No persistent storage, return empty results
+		return []*models.MonitorResult{}, nil
+	}
+
+	return rs.persistentStore.GetResults(monitorName, start, end, limit)
 }
 
 // ResultStoreStats represents statistics about the result store

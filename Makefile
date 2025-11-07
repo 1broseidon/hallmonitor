@@ -1,5 +1,5 @@
 # Hall Monitor Enhanced Makefile
-.PHONY: help build test clean docker k8s helm all
+.PHONY: help build test test-race test-coverage clean docker k8s helm all
 
 # ============================================================================
 # Variables
@@ -81,17 +81,28 @@ build-linux:
 	@CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o $(APP_NAME)-linux cmd/server/main.go
 	@echo "$(GREEN)✅ Linux build complete$(RESET)"
 
-## test: Run tests with coverage
+## test: Run tests without race detector
 test:
 	@echo "$(CYAN)Running tests...$(RESET)"
-	@go test -v -race -coverprofile=coverage.out ./...
-	@go tool cover -func=coverage.out | tail -n 1
+	@go test ./...
 	@echo "$(GREEN)✅ Tests passed$(RESET)"
+
+## test-race: Run tests with the race detector
+test-race:
+	@echo "$(CYAN)Running tests with race detector...$(RESET)"
+	@go test -race ./...
+	@echo "$(GREEN)✅ Race detector tests passed$(RESET)"
+
+## test-coverage: Run tests with coverage reporting
+test-coverage:
+	@echo "$(CYAN)Running coverage analysis...$(RESET)"
+	@./scripts/coverage.sh
+	@echo "$(GREEN)✅ Coverage report generated$(RESET)"
 
 ## clean: Clean build artifacts
 clean:
 	@echo "$(CYAN)Cleaning...$(RESET)"
-	@rm -f $(APP_NAME) $(APP_NAME)-* coverage.out
+	@rm -f $(APP_NAME) $(APP_NAME)-* coverage.out coverage.html
 	@echo "$(GREEN)✅ Clean complete$(RESET)"
 
 ## deps: Download and tidy dependencies
@@ -255,15 +266,16 @@ helm-install-prod:
 # Development Targets
 # ============================================================================
 
-## dev: Run in development mode
+## dev: Run in development mode (serves HTML from disk for hot-reloading)
 dev:
 	@echo "$(CYAN)Starting in development mode...$(RESET)"
-	@go run cmd/server/main.go --config config.yml
+	@echo "$(YELLOW)Note: HTML files will be served from disk for real-time updates$(RESET)"
+	@HALLMONITOR_DEV=true go run cmd/server/main.go --config config.yml
 
 ## dev-watch: Run with file watching (requires entr)
 dev-watch:
 	@echo "$(CYAN)Starting with file watching...$(RESET)"
-	@find . -name "*.go" | entr -r go run cmd/server/main.go --config config.yml
+	@HALLMONITOR_DEV=true find . -name "*.go" | entr -r go run cmd/server/main.go --config config.yml
 
 # ============================================================================
 # Utility Targets

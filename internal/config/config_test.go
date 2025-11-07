@@ -92,6 +92,92 @@ monitoring:
 	}
 }
 
+func TestLoadConfigEnvironmentOverrides(t *testing.T) {
+	configYAML := `
+monitoring:
+  defaultInterval: "30s"
+  defaultTimeout: "5s"
+  groups:
+    - name: "default"
+      monitors:
+        - type: "http"
+          name: "homepage"
+          url: "https://example.com"
+`
+
+	path := writeTempConfig(t, configYAML)
+
+	t.Setenv("SERVER_PORT", "9090")
+	t.Setenv("SERVER_HOST", "127.0.0.1")
+	t.Setenv("LOGGING_LEVEL", "debug")
+
+	cfg, err := LoadConfig(path)
+	if err != nil {
+		t.Fatalf("LoadConfig returned error: %v", err)
+	}
+
+	if cfg.Server.Port != "9090" {
+		t.Fatalf("expected SERVER_PORT override to be applied, got %s", cfg.Server.Port)
+	}
+
+	if cfg.Server.Host != "127.0.0.1" {
+		t.Fatalf("expected SERVER_HOST override to be applied, got %s", cfg.Server.Host)
+	}
+
+	if cfg.Logging.Level != "debug" {
+		t.Fatalf("expected LOGGING_LEVEL override to be applied, got %s", cfg.Logging.Level)
+	}
+}
+
+func TestLoadConfigInvalidYAML(t *testing.T) {
+	invalidYAML := `
+monitoring:
+  defaultInterval: "not-a-duration"
+  groups:
+    - name: "default"
+      monitors: []
+`
+
+	path := writeTempConfig(t, invalidYAML)
+
+	if _, err := LoadConfig(path); err == nil {
+		t.Fatalf("expected error for invalid duration in YAML content")
+	}
+}
+
+func TestConfigValidateSuccess(t *testing.T) {
+	enabled := true
+	cfg := &Config{
+		Server: ServerConfig{Port: "8080"},
+		Monitoring: MonitoringConfig{
+			DefaultInterval: 30 * time.Second,
+			DefaultTimeout:  10 * time.Second,
+			Groups: []models.MonitorGroup{
+				{
+					Name: "core",
+					Monitors: []models.Monitor{
+						{
+							Type:    models.MonitorTypeHTTP,
+							Name:    "homepage",
+							URL:     "https://example.com",
+							Enabled: &enabled,
+						},
+						{
+							Type:   models.MonitorTypePing,
+							Name:   "dns",
+							Target: "1.1.1.1",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("expected configuration to validate, got error: %v", err)
+	}
+}
+
 func TestConfigValidateErrors(t *testing.T) {
 	baseConfig := &Config{
 		Server: ServerConfig{Port: ""},

@@ -48,6 +48,10 @@ Thumbs.db
 /dist/
 /build/
 
+# Data storage
+/data/
+*.db/
+
 # Logs
 *.log
 logs/

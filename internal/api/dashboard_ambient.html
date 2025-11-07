@@ -607,10 +607,36 @@
 
         async function loadUptimeHistory() {
             try {
-                // Fetch Prometheus metrics to build uptime history
-                const response = await fetch('/metrics');
-                const metricsText = await response.text();
-                uptimeHistory = parseUptimeMetrics(metricsText);
+                // Fetch historical data from new history API
+                const monitors = monitorsData?.monitors || [];
+                if (monitors.length === 0) {
+                    generateHeatmap(null);
+                    return;
+                }
+
+                // Get history for the first monitor as a sample (can be extended to all monitors)
+                const monitorName = monitors[0]?.name;
+                if (!monitorName) {
+                    generateHeatmap(null);
+                    return;
+                }
+
+                // Fetch last 90 days of history for ambient view
+                const end = new Date();
+                const start = new Date();
+                start.setDate(start.getDate() - 90);
+
+                const response = await fetch(
+                    `${API_ENDPOINT}/monitors/${encodeURIComponent(monitorName)}/history?` +
+                    `start=${start.toISOString()}&end=${end.toISOString()}&limit=10000`
+                );
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error ${response.status}`);
+                }
+
+                const data = await response.json();
+                uptimeHistory = parseHistoricalResults(data.results || []);
                 generateHeatmap(uptimeHistory);
             } catch (error) {
                 console.error('Failed to load uptime history:', error);
@@ -619,32 +645,69 @@
             }
         }
 
-        function parseUptimeMetrics(metricsText) {
-            // Parse hallmonitor_monitor_up metric from Prometheus format
-            // This is a simple parser - in production you'd use a proper metrics library
-            const lines = metricsText.split('\n');
+        function parseHistoricalResults(results) {
+            // Convert historical results into daily uptime data
             const uptimeData = {};
             
-            for (const line of lines) {
-                if (line.startsWith('hallmonitor_monitor_up{')) {
-                    // Extract value (1 for up, 0 for down)
-                    const match = line.match(/hallmonitor_monitor_up\{.*\}\s+([\d.]+)/);
-                    if (match) {
-                        const value = parseFloat(match[1]);
-                        // Store current status (in real implementation, would aggregate over time)
-                        const date = new Date().toISOString().split('T')[0];
-                        if (!uptimeData[date]) uptimeData[date] = [];
-                        uptimeData[date].push(value);
-                    }
+            for (const result of results) {
+                const date = result.timestamp.split('T')[0];
+                if (!uptimeData[date]) {
+                    uptimeData[date] = { up: 0, down: 0, total: 0 };
+                }
+                
+                uptimeData[date].total++;
+                if (result.status === 'up') {
+                    uptimeData[date].up++;
+                } else {
+                    uptimeData[date].down++;
                 }
             }
             
-            return uptimeData;
+            // Convert to array of uptime values (0-1 range)
+            const dailyUptimes = {};
+            for (const [date, stats] of Object.entries(uptimeData)) {
+                dailyUptimes[date] = stats.total > 0 ? stats.up / stats.total : 1.0;
+            }
+            
+            return dailyUptimes;
+        }
+
+        async function loadUptimeStats() {
+            try {
+                // Load uptime statistics for different periods
+                const monitors = monitorsData?.monitors || [];
+                if (monitors.length === 0) return;
+
+                const monitorName = monitors[0]?.name;
+                if (!monitorName) return;
+
+                // Load 24h, 7d, and 30d uptime stats in parallel
+                const [uptime24h, uptime7d, uptime30d] = await Promise.all([
+                    fetch(`${API_ENDPOINT}/monitors/${encodeURIComponent(monitorName)}/uptime?period=24h`)
+                        .then(r => r.ok ? r.json() : null),
+                    fetch(`${API_ENDPOINT}/monitors/${encodeURIComponent(monitorName)}/uptime?period=168h`)
+                        .then(r => r.ok ? r.json() : null),
+                    fetch(`${API_ENDPOINT}/monitors/${encodeURIComponent(monitorName)}/uptime?period=720h`)
+                        .then(r => r.ok ? r.json() : null)
+                ]);
+
+                // Store in global variable for use in UI
+                window.uptimeStats = {
+                    '24h': uptime24h,
+                    '7d': uptime7d,
+                    '30d': uptime30d
+                };
+
+                console.log('Uptime stats loaded:', window.uptimeStats);
+            } catch (error) {
+                console.error('Failed to load uptime stats:', error);
+            }
         }
 
         function refreshData() {
             loadData();
             loadUptimeHistory();
+            loadUptimeStats();
         }
 
         function exportToGrafana() {
@@ -770,12 +833,11 @@
                 let level;
                 let tooltipText;
                 
-                if (historyData && historyData[dateStr]) {
-                    // Use actual data from Prometheus metrics
-                    const dayData = historyData[dateStr];
-                    const avgUptime = dayData.reduce((a, b) => a + b, 0) / dayData.length;
-                    level = Math.floor(avgUptime * 5);
-                    const uptimePercent = (level / 5 * 100).toFixed(1);
+                if (historyData && historyData[dateStr] !== undefined) {
+                    // Use actual data from history API
+                    const uptimeValue = historyData[dateStr]; // 0-1 range
+                    level = Math.floor(uptimeValue * 5);
+                    const uptimePercent = (uptimeValue * 100).toFixed(1);
                     tooltipText = `${date.toLocaleDateString()}: ${uptimePercent}% uptime`;
                 } else if (dateStr === todayStr && monitorsData) {
                     // Use current monitor status for TODAY only
