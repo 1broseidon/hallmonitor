@@ -81,9 +81,16 @@ func (rw *responseWriter) Write(data []byte) (int, error) {
 	return rw.Buffer.Write(data)
 }
 
-// dashboardHandler serves the basic dashboard HTML
+// dashboardHandler serves the basic dashboard HTML or ambient view based on query parameter
 func (s *Server) dashboardHandler(c *fiber.Ctx) error {
 	c.Set("Content-Type", "text/html; charset=utf-8")
+
+	// Check if ambient view is requested
+	view := c.Query("view")
+	if view == "ambient" {
+		return c.SendString(dashboardAmbientHTML)
+	}
+
 	return c.SendString(dashboardHTML)
 }
 
@@ -91,6 +98,12 @@ func (s *Server) dashboardHandler(c *fiber.Ctx) error {
 func (s *Server) dashboardAdvancedHandler(c *fiber.Ctx) error {
 	c.Set("Content-Type", "text/html; charset=utf-8")
 	return c.SendString(dashboardAdvancedHTML)
+}
+
+// dashboardAmbientHandler serves ambient dashboard HTML
+func (s *Server) dashboardAmbientHandler(c *fiber.Ctx) error {
+	c.Set("Content-Type", "text/html; charset=utf-8")
+	return c.SendString(dashboardAmbientHTML)
 }
 
 // extractHostnameAndIP extracts hostname and IP address from a target or URL

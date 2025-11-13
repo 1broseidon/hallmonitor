@@ -23,9 +23,8 @@ import (
 //go:embed dashboard.html
 var dashboardHTML string
 
-// TODO: Re-enable ambient dashboard when needed
-// //go:embed dashboard_ambient.html
-// var dashboardAmbientHTML string
+//go:embed dashboard_ambient.html
+var dashboardAmbientHTML string
 
 //go:embed dashboard_advanced.html
 var dashboardAdvancedHTML string
@@ -182,6 +181,7 @@ func (s *Server) setupRoutes() {
 		s.app.Get("/", s.dashboardHandler)
 		s.app.Get("/dashboard", s.dashboardHandler)
 		s.app.Get("/dashboard/advanced", s.dashboardAdvancedHandler)
+		s.app.Get("/dashboard/ambient", s.dashboardAmbientHandler)
 	}
 
 	// API v1 routes
