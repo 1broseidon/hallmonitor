@@ -59,7 +59,7 @@ func NewResultStoreWithPersistence(maxResults int, persistentStore PersistentSto
 func (rs *ResultStore) StoreResult(monitorName string, result *models.MonitorResult) {
 	// Store in memory
 	rs.mu.Lock()
-	
+
 	// Get or create monitor results
 	monitorResults, exists := rs.results[monitorName]
 	if !exists {
@@ -79,7 +79,7 @@ func (rs *ResultStore) StoreResult(monitorName string, result *models.MonitorRes
 	if monitorResults.Count < rs.maxResults {
 		monitorResults.Count++
 	}
-	
+
 	rs.mu.Unlock()
 
 	// Store to persistent storage (if available) - do this outside the lock to avoid blocking

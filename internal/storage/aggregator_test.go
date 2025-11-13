@@ -218,4 +218,3 @@ func TestAggregator_AllUp(t *testing.T) {
 		t.Errorf("Expected 0 down checks, got %d", aggregate.DownChecks)
 	}
 }
-

@@ -1,0 +1,279 @@
+groups:
+  - name: hallmonitor_health
+    interval: 30s
+    rules:
+      # Monitor Down Alert
+      - alert: MonitorDown
+        expr: hallmonitor_monitor_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: monitor
+        annotations:
+          summary: "Monitor {{ $labels.monitor }} is DOWN"
+          description: "Monitor {{ $labels.monitor }} (type: {{ $labels.type }}, group: {{ $labels.group }}) has been down for more than 1 minute."
+          dashboard: "http://localhost:3000/d/hallmonitor-overview"
+
+      # Monitor Flapping Alert
+      - alert: MonitorFlapping
+        expr: changes(hallmonitor_monitor_up[10m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+          component: monitor
+        annotations:
+          summary: "Monitor {{ $labels.monitor }} is flapping"
+          description: "Monitor {{ $labels.monitor }} has changed state {{ $value }} times in the last 10 minutes."
+          dashboard: "http://localhost:3000/d/hallmonitor-overview"
+
+      # High Check Failure Rate
+      - alert: HighCheckFailureRate
+        expr: |
+          (
+            sum(rate(hallmonitor_checks_total{status="down"}[5m])) by (monitor, type, group)
+            /
+            sum(rate(hallmonitor_checks_total[5m])) by (monitor, type, group)
+          ) * 100 > 50
+        for: 5m
+        labels:
+          severity: warning
+          component: monitor
+        annotations:
+          summary: "High failure rate for {{ $labels.monitor }}"
+          description: "Monitor {{ $labels.monitor }} has {{ $value | humanize }}% check failure rate over the last 5 minutes."
+          dashboard: "http://localhost:3000/d/hallmonitor-overview"
+
+  - name: hallmonitor_performance
+    interval: 30s
+    rules:
+      # High Response Time (P95)
+      - alert: HighResponseTime
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(hallmonitor_check_duration_seconds_bucket[5m])) by (le, monitor, type, group)
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+          component: performance
+        annotations:
+          summary: "High response time for {{ $labels.monitor }}"
+          description: "Monitor {{ $labels.monitor }} has P95 response time of {{ $value | humanize }}s (threshold: 1s)."
+          dashboard: "http://localhost:3000/d/hallmonitor-overview"
+
+      # Very High Response Time (P95)
+      - alert: VeryHighResponseTime
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(hallmonitor_check_duration_seconds_bucket[5m])) by (le, monitor, type, group)
+          ) > 5
+        for: 2m
+        labels:
+          severity: critical
+          component: performance
+        annotations:
+          summary: "Critical response time for {{ $labels.monitor }}"
+          description: "Monitor {{ $labels.monitor }} has P95 response time of {{ $value | humanize }}s (threshold: 5s)."
+          dashboard: "http://localhost:3000/d/hallmonitor-overview"
+
+      # High HTTP Response Time
+      - alert: HighHTTPResponseTime
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(hallmonitor_http_response_time_seconds_bucket[5m])) by (le, monitor, group)
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+          component: http
+        annotations:
+          summary: "High HTTP response time for {{ $labels.monitor }}"
+          description: "HTTP monitor {{ $labels.monitor }} has P95 response time of {{ $value | humanize }}s."
+          dashboard: "http://localhost:3000/d/hallmonitor-overview"
+
+  - name: hallmonitor_ssl
+    interval: 60s
+    rules:
+      # SSL Certificate Expiring Soon (30 days)
+      - alert: SSLCertificateExpiringSoon
+        expr: (hallmonitor_ssl_cert_expiry_seconds - time()) / 86400 < 30
+        for: 1h
+        labels:
+          severity: warning
+          component: ssl
+        annotations:
+          summary: "SSL certificate expiring soon for {{ $labels.monitor }}"
+          description: "SSL certificate for {{ $labels.monitor }} (subject: {{ $labels.subject }}) expires in {{ $value | humanize }} days."
+          dashboard: "http://localhost:3000/d/hallmonitor-overview"
+
+      # SSL Certificate Expiring Critical (7 days)
+      - alert: SSLCertificateExpiringCritical
+        expr: (hallmonitor_ssl_cert_expiry_seconds - time()) / 86400 < 7
+        for: 10m
+        labels:
+          severity: critical
+          component: ssl
+        annotations:
+          summary: "SSL certificate expiring CRITICAL for {{ $labels.monitor }}"
+          description: "SSL certificate for {{ $labels.monitor }} (subject: {{ $labels.subject }}) expires in {{ $value | humanize }} days!"
+          dashboard: "http://localhost:3000/d/hallmonitor-overview"
+
+  - name: hallmonitor_network
+    interval: 30s
+    rules:
+      # High Packet Loss
+      - alert: HighPacketLoss
+        expr: hallmonitor_ping_packet_loss_percent > 5
+        for: 5m
+        labels:
+          severity: warning
+          component: ping
+        annotations:
+          summary: "High packet loss for {{ $labels.monitor }}"
+          description: "Ping monitor {{ $labels.monitor }} has {{ $value }}% packet loss."
+          dashboard: "http://localhost:3000/d/hallmonitor-overview"
+
+      # Critical Packet Loss
+      - alert: CriticalPacketLoss
+        expr: hallmonitor_ping_packet_loss_percent > 20
+        for: 2m
+        labels:
+          severity: critical
+          component: ping
+        annotations:
+          summary: "Critical packet loss for {{ $labels.monitor }}"
+          description: "Ping monitor {{ $labels.monitor }} has {{ $value }}% packet loss!"
+          dashboard: "http://localhost:3000/d/hallmonitor-overview"
+
+      # High Ping RTT
+      - alert: HighPingRTT
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(hallmonitor_ping_rtt_seconds_bucket[5m])) by (le, monitor, group)
+          ) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          component: ping
+        annotations:
+          summary: "High ping RTT for {{ $labels.monitor }}"
+          description: "Ping monitor {{ $labels.monitor }} has P95 RTT of {{ $value | humanize }}s."
+          dashboard: "http://localhost:3000/d/hallmonitor-overview"
+
+  - name: hallmonitor_dns
+    interval: 30s
+    rules:
+      # DNS Query Failures
+      - alert: DNSQueryFailures
+        expr: |
+          sum(rate(hallmonitor_dns_response_codes_total{rcode!="0"}[5m])) by (monitor, group)
+          /
+          sum(rate(hallmonitor_dns_response_codes_total[5m])) by (monitor, group)
+          > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          component: dns
+        annotations:
+          summary: "DNS query failures for {{ $labels.monitor }}"
+          description: "DNS monitor {{ $labels.monitor }} has {{ $value | humanizePercentage }} failed queries."
+          dashboard: "http://localhost:3000/d/hallmonitor-overview"
+
+      # Slow DNS Queries
+      - alert: SlowDNSQueries
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(hallmonitor_dns_query_time_seconds_bucket[5m])) by (le, monitor, group)
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+          component: dns
+        annotations:
+          summary: "Slow DNS queries for {{ $labels.monitor }}"
+          description: "DNS monitor {{ $labels.monitor }} has P95 query time of {{ $value | humanize }}s."
+          dashboard: "http://localhost:3000/d/hallmonitor-overview"
+
+  - name: hallmonitor_http_errors
+    interval: 30s
+    rules:
+      # HTTP 4xx Errors
+      - alert: HighHTTP4xxRate
+        expr: |
+          sum(rate(hallmonitor_http_status_codes_total{status_code=~"4.."}[5m])) by (monitor, group)
+          /
+          sum(rate(hallmonitor_http_status_codes_total[5m])) by (monitor, group)
+          > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          component: http
+        annotations:
+          summary: "High HTTP 4xx rate for {{ $labels.monitor }}"
+          description: "HTTP monitor {{ $labels.monitor }} has {{ $value | humanizePercentage }} 4xx responses."
+          dashboard: "http://localhost:3000/d/hallmonitor-overview"
+
+      # HTTP 5xx Errors
+      - alert: HighHTTP5xxRate
+        expr: |
+          sum(rate(hallmonitor_http_status_codes_total{status_code=~"5.."}[5m])) by (monitor, group)
+          /
+          sum(rate(hallmonitor_http_status_codes_total[5m])) by (monitor, group)
+          > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          component: http
+        annotations:
+          summary: "High HTTP 5xx rate for {{ $labels.monitor }}"
+          description: "HTTP monitor {{ $labels.monitor }} has {{ $value | humanizePercentage }} 5xx responses!"
+          dashboard: "http://localhost:3000/d/hallmonitor-overview"
+
+  - name: hallmonitor_system
+    interval: 30s
+    rules:
+      # No Checks Running
+      - alert: NoChecksRunning
+        expr: sum(rate(hallmonitor_checks_total[5m])) == 0
+        for: 5m
+        labels:
+          severity: critical
+          component: system
+        annotations:
+          summary: "No monitor checks running"
+          description: "Hall Monitor is not performing any checks. System may be down or misconfigured."
+          dashboard: "http://localhost:3000/d/hallmonitor-overview"
+
+      # High Error Rate
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(hallmonitor_errors_total[5m]))
+          /
+          sum(rate(hallmonitor_checks_total[5m]))
+          > 0.2
+        for: 5m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High overall error rate"
+          description: "Hall Monitor has {{ $value | humanizePercentage }} error rate across all monitors."
+          dashboard: "http://localhost:3000/d/hallmonitor-overview"
+
+      # Many Monitors Down
+      - alert: ManyMonitorsDown
+        expr: |
+          (
+            count(hallmonitor_monitor_up == 0)
+            /
+            count(hallmonitor_monitor_up)
+          ) > 0.3
+        for: 2m
+        labels:
+          severity: critical
+          component: system
+        annotations:
+          summary: "Many monitors are down"
+          description: "{{ $value | humanizePercentage }} of monitors are currently down!"
+          dashboard: "http://localhost:3000/d/hallmonitor-overview"
+

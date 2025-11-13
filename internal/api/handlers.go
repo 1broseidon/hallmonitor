@@ -81,6 +81,18 @@ func (rw *responseWriter) Write(data []byte) (int, error) {
 	return rw.Buffer.Write(data)
 }
 
+// dashboardHandler serves the basic dashboard HTML
+func (s *Server) dashboardHandler(c *fiber.Ctx) error {
+	c.Set("Content-Type", "text/html; charset=utf-8")
+	return c.SendString(dashboardHTML)
+}
+
+// dashboardAdvancedHandler serves the advanced dashboard HTML
+func (s *Server) dashboardAdvancedHandler(c *fiber.Ctx) error {
+	c.Set("Content-Type", "text/html; charset=utf-8")
+	return c.SendString(dashboardAdvancedHTML)
+}
+
 // extractHostnameAndIP extracts hostname and IP address from a target or URL
 func extractHostnameAndIP(target, urlStr string) (hostname, ipAddr *string) {
 	var host string

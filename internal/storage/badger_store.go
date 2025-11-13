@@ -26,7 +26,7 @@ func NewBadgerStore(path string, retentionDays int, logger *logging.Logger) (*Ba
 
 	opts := badger.DefaultOptions(path)
 	opts.Logger = &badgerLogger{logger: logger}
-	
+
 	db, err := badger.Open(opts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open badger db: %w", err)
@@ -283,6 +283,11 @@ func (bs *BadgerStore) GetAggregates(monitor string, periodType string, start, e
 	return aggregates, nil
 }
 
+// GetAggregatesByPeriod is an alias for GetAggregates for consistency
+func (bs *BadgerStore) GetAggregatesByPeriod(monitor string, start, end time.Time, periodType string) ([]*models.AggregateResult, error) {
+	return bs.GetAggregates(monitor, periodType, start, end)
+}
+
 // GetMonitorNames returns all monitor names that have stored results
 func (bs *BadgerStore) GetMonitorNames() ([]string, error) {
 	monitorNames := make(map[string]bool)
@@ -413,4 +418,3 @@ func (bl *badgerLogger) Infof(format string, args ...interface{}) {
 func (bl *badgerLogger) Debugf(format string, args ...interface{}) {
 	bl.logger.WithComponent("badger").Debugf(format, args...)
 }
-

@@ -694,6 +694,8 @@
             border: 1px solid;
             display: flex;
             flex-direction: column;
+            min-height: 300px;
+            flex: 1;
         }
 
         html[data-theme="dark"] .heatmap-card {
@@ -771,16 +773,20 @@
         }
 
         .legend-box.level-0 { background: rgba(255, 255, 255, 0.03); }
-        .legend-box.level-1 { background: rgba(72, 199, 142, 0.2); }
-        .legend-box.level-2 { background: rgba(72, 199, 142, 0.4); }
-        .legend-box.level-3 { background: rgba(72, 199, 142, 0.6); }
-        .legend-box.level-4 { background: rgba(72, 199, 142, 0.8); }
+        .legend-box.level-1 { background: rgba(241, 70, 104, 0.7); }
+        .legend-box.level-2 { background: rgba(255, 193, 7, 0.6); }
+        .legend-box.level-3 { background: rgba(255, 193, 7, 0.8); }
+        .legend-box.level-4 { background: rgba(72, 199, 142, 0.75); }
         .legend-box.level-5 { background: #48c78e; }
 
         .heatmap-grid {
             display: grid;
-            /* grid-template-columns set dynamically by JavaScript */
+            /* grid-template-columns and grid-auto-rows set dynamically by JavaScript */
             gap: 3px;
+            flex: 1;
+            min-height: 200px;
+            width: 100%;
+            overflow: hidden;
         }
 
         .heatmap-cell {
@@ -788,6 +794,9 @@
             border-radius: 2px;
             cursor: pointer;
             transition: all 0.2s ease;
+            position: relative;
+            min-width: 0;
+            min-height: 0;
         }
 
         .heatmap-cell:hover {
@@ -795,19 +804,82 @@
             z-index: 10;
         }
 
-        html[data-theme="dark"] .heatmap-cell.level-0 { background: rgba(255, 255, 255, 0.03); }
-        html[data-theme="dark"] .heatmap-cell.level-1 { background: rgba(72, 199, 142, 0.2); }
-        html[data-theme="dark"] .heatmap-cell.level-2 { background: rgba(72, 199, 142, 0.4); }
-        html[data-theme="dark"] .heatmap-cell.level-3 { background: rgba(72, 199, 142, 0.6); }
-        html[data-theme="dark"] .heatmap-cell.level-4 { background: rgba(72, 199, 142, 0.8); }
-        html[data-theme="dark"] .heatmap-cell.level-5 { background: #48c78e; }
+        /* Past no-data state - Muted dark gray with diagonal stripes */
+        html[data-theme="dark"] .heatmap-cell.level-past-nodata {
+            background: repeating-linear-gradient(
+                45deg,
+                rgba(80, 80, 80, 0.12),
+                rgba(80, 80, 80, 0.12) 2px,
+                rgba(60, 60, 60, 0.08) 2px,
+                rgba(60, 60, 60, 0.08) 4px
+            );
+            border: 1px solid rgba(80, 80, 80, 0.2);
+        }
 
-        html[data-theme="light"] .heatmap-cell.level-0 { background: rgba(0, 0, 0, 0.03); }
-        html[data-theme="light"] .heatmap-cell.level-1 { background: rgba(72, 199, 142, 0.3); }
-        html[data-theme="light"] .heatmap-cell.level-2 { background: rgba(72, 199, 142, 0.5); }
-        html[data-theme="light"] .heatmap-cell.level-3 { background: rgba(72, 199, 142, 0.7); }
-        html[data-theme="light"] .heatmap-cell.level-4 { background: rgba(72, 199, 142, 0.85); }
-        html[data-theme="light"] .heatmap-cell.level-5 { background: #48c78e; }
+        html[data-theme="light"] .heatmap-cell.level-past-nodata {
+            background: repeating-linear-gradient(
+                45deg,
+                rgba(120, 120, 120, 0.15),
+                rgba(120, 120, 120, 0.15) 2px,
+                rgba(140, 140, 140, 0.08) 2px,
+                rgba(140, 140, 140, 0.08) 4px
+            );
+            border: 1px solid rgba(120, 120, 120, 0.3);
+        }
+
+        /* Uptime data states - Red/Yellow/Green gradient based on percentage */
+        html[data-theme="dark"] .heatmap-cell.level-1 { 
+            background: rgba(241, 70, 104, 0.85);
+            box-shadow: inset 0 0 0 1px rgba(241, 70, 104, 0.3);
+        }
+        html[data-theme="dark"] .heatmap-cell.level-2 { 
+            background: rgba(255, 193, 7, 0.6);
+            box-shadow: inset 0 0 0 1px rgba(255, 193, 7, 0.3);
+        }
+        html[data-theme="dark"] .heatmap-cell.level-3 { 
+            background: rgba(255, 193, 7, 0.8);
+            box-shadow: inset 0 0 0 1px rgba(255, 193, 7, 0.3);
+        }
+        html[data-theme="dark"] .heatmap-cell.level-4 { 
+            background: rgba(72, 199, 142, 0.75);
+            box-shadow: inset 0 0 0 1px rgba(72, 199, 142, 0.3);
+        }
+        html[data-theme="dark"] .heatmap-cell.level-5 { 
+            background: #48c78e;
+            box-shadow: inset 0 0 0 1px rgba(72, 199, 142, 0.5);
+        }
+
+        html[data-theme="light"] .heatmap-cell.level-1 { 
+            background: rgba(241, 70, 104, 0.75);
+            box-shadow: inset 0 0 0 1px rgba(241, 70, 104, 0.4);
+        }
+        html[data-theme="light"] .heatmap-cell.level-2 { 
+            background: rgba(255, 193, 7, 0.7);
+            box-shadow: inset 0 0 0 1px rgba(255, 193, 7, 0.4);
+        }
+        html[data-theme="light"] .heatmap-cell.level-3 { 
+            background: rgba(255, 193, 7, 0.85);
+            box-shadow: inset 0 0 0 1px rgba(255, 193, 7, 0.4);
+        }
+        html[data-theme="light"] .heatmap-cell.level-4 { 
+            background: rgba(72, 199, 142, 0.7);
+            box-shadow: inset 0 0 0 1px rgba(72, 199, 142, 0.4);
+        }
+        html[data-theme="light"] .heatmap-cell.level-5 { 
+            background: rgba(72, 199, 142, 0.9);
+            box-shadow: inset 0 0 0 1px rgba(72, 199, 142, 0.5);
+        }
+
+        /* Future unknown state - Light gray with dotted border */
+        html[data-theme="dark"] .heatmap-cell.level-future {
+            background: rgba(120, 120, 120, 0.08);
+            border: 1px dotted rgba(120, 120, 120, 0.3);
+        }
+
+        html[data-theme="light"] .heatmap-cell.level-future {
+            background: rgba(160, 160, 160, 0.08);
+            border: 1px dotted rgba(140, 140, 140, 0.4);
+        }
 
         /* View Toggle */
         .view-toggle {
@@ -1013,7 +1085,9 @@
                 <div class="heatmap-header">
                     <div>
                         <div class="section-title" style="margin: 0;">Uptime History</div>
-                        <p style="font-size: 0.75rem; opacity: 0.5; margin-top: 0.25rem;">Data accumulates as Hall Monitor runs. Gray = No data yet.</p>
+                        <p style="font-size: 0.75rem; opacity: 0.5; margin-top: 0.25rem;">
+                            Red/Yellow/Green = Uptime data • Striped gray = Past no data • Light dotted = Future
+                        </p>
                     </div>
                     <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.75rem;">
                         <div class="time-range-toggle">
@@ -1022,14 +1096,13 @@
                             <button class="time-range-btn active" onclick="setTimeRange(90)">90d</button>
                         </div>
                         <div class="heatmap-legend">
-                            <span>Less</span>
-                            <span class="legend-box level-0"></span>
-                            <span class="legend-box level-1"></span>
-                            <span class="legend-box level-2"></span>
-                            <span class="legend-box level-3"></span>
-                            <span class="legend-box level-4"></span>
-                            <span class="legend-box level-5"></span>
-                            <span>More</span>
+                            <span style="opacity: 0.6;">Low</span>
+                            <span class="legend-box level-1" title="<50% uptime"></span>
+                            <span class="legend-box level-2" title="50-80% uptime"></span>
+                            <span class="legend-box level-3" title="80-90% uptime"></span>
+                            <span class="legend-box level-4" title="90-98% uptime"></span>
+                            <span class="legend-box level-5" title="98-100% uptime"></span>
+                            <span style="opacity: 0.6;">High</span>
                         </div>
                     </div>
                 </div>
@@ -1177,13 +1250,30 @@
             });
         }
 
+        // Resize handler for heatmap recalculation
+        let resizeTimeout;
+        function handleResize() {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                if (uptimeHistory !== null) {
+                    generateHeatmap(uptimeHistory);
+                }
+            }, 250); // Debounce resize events
+        }
+
         // Initialize on load
         initTheme();
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             initSettings();
-            loadData();
-            loadUptimeHistory();
-            setInterval(loadData, 30000); // Refresh every 30s
+            await loadData();
+            await loadUptimeHistory();
+            setInterval(async () => {
+                await loadData();
+                await loadUptimeHistory();
+            }, 30000); // Refresh every 30s
+            
+            // Add resize listener for responsive heatmap
+            window.addEventListener('resize', handleResize);
         });
 
         function setTimeRange(days) {
@@ -1313,10 +1403,10 @@
             }
         }
 
-        function refreshData() {
-            loadData();
-            loadUptimeHistory();
-            loadUptimeStats();
+        async function refreshData() {
+            await loadData();
+            await loadUptimeHistory();
+            await loadUptimeStats();
         }
 
         function exportToGrafana() {
@@ -1689,62 +1779,127 @@
             return num.toString();
         }
 
+        function calculateUptimeLevel(uptimeValue) {
+            // Convert 0-1 range to 1-5 levels with better thresholds
+            if (uptimeValue < 0.5) return 1;      // <50% - Critical (red)
+            if (uptimeValue < 0.8) return 2;      // 50-80% - Poor (orange/yellow)
+            if (uptimeValue < 0.9) return 3;      // 80-90% - Warning (yellow)
+            if (uptimeValue < 0.98) return 4;     // 90-98% - Good (light green)
+            return 5;                              // 98-100% - Excellent (green)
+        }
+
+        function calculateOptimalGridLayout(days, containerWidth, containerHeight) {
+            const gap = 3;
+            
+            // Try different column counts to find the best fit
+            // We want to maximize tile size while keeping them square
+            let bestColumns = 7;
+            let bestTileSize = 0;
+            
+            // Try column counts from 5 to 30
+            for (let cols = 5; cols <= Math.min(30, days); cols++) {
+                const rows = Math.ceil(days / cols);
+                
+                // Calculate tile size based on width
+                const availableWidth = containerWidth - (gap * (cols - 1));
+                const tileWidth = availableWidth / cols;
+                
+                // Calculate tile size based on height
+                const availableHeight = containerHeight - (gap * (rows - 1));
+                const tileHeight = availableHeight / rows;
+                
+                // Use the smaller dimension to keep square
+                const tileSize = Math.min(tileWidth, tileHeight);
+                
+                // Prefer layouts that maximize tile size
+                if (tileSize > bestTileSize && tileSize >= 8) { // Minimum 8px tiles
+                    bestTileSize = tileSize;
+                    bestColumns = cols;
+                }
+            }
+            
+            const rows = Math.ceil(days / bestColumns);
+            
+            return { columns: bestColumns, rows };
+        }
+
         function generateHeatmap(historyData) {
             const grid = document.getElementById('heatmap-grid');
-            grid.innerHTML = '';
+            if (!grid) return;
             
-            // Use currentTimeRange (7, 30, or 90 days)
-            const days = currentTimeRange;
-            const today = new Date();
-            const todayStr = today.toISOString().split('T')[0];
-            
-            // Calculate columns for grid layout
-            let columns;
-            if (days === 7) {
-                columns = 7;
-            } else if (days === 30) {
-                columns = 30;
-            } else {
-                // 90 days = ~13 weeks
-                columns = Math.min(days, 52); // Cap at 52 for better display
-            }
-            grid.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
+            // Use requestAnimationFrame to ensure container is sized
+            requestAnimationFrame(() => {
+                grid.innerHTML = '';
+                
+                // Use currentTimeRange (7, 30, or 90 days)
+                const days = currentTimeRange;
+                const today = new Date();
+                today.setHours(23, 59, 59, 999); // Set to end of today for proper comparison
+                const todayStr = today.toISOString().split('T')[0];
+                
+                // Calculate optimal grid layout based on container dimensions
+                // Account for padding (2rem = 32px on each side) and gap
+                const card = grid.closest('.heatmap-card');
+                const cardWidth = card ? card.clientWidth : 800;
+                const cardHeight = grid.clientHeight || 300; // Use grid height if available
+                const padding = 64; // 2rem * 2 (left + right)
+                const availableWidth = Math.max(200, cardWidth - padding);
+                const availableHeight = Math.max(150, cardHeight - 20); // Account for header
+                const { columns, rows } = calculateOptimalGridLayout(days, availableWidth, availableHeight);
+                
+                // Set grid layout to fill container
+                grid.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
+                grid.style.gridAutoRows = 'auto'; // Let rows size naturally based on aspect-ratio
+                
+                _generateHeatmapCells(grid, days, today, todayStr, historyData);
+            });
+        }
+        
+        function _generateHeatmapCells(grid, days, today, todayStr, historyData) {
             
             for (let i = 0; i < days; i++) {
                 const cell = document.createElement('div');
-                cell.className = 'heatmap-cell';
                 
                 const date = new Date(today);
                 date.setDate(date.getDate() - (days - 1 - i));
+                date.setHours(0, 0, 0, 0); // Set to start of day for comparison
                 const dateStr = date.toISOString().split('T')[0];
                 
-                // Calculate uptime level for this day
-                let level;
+                // Determine state: past-no-data, future, or has-data
+                const isFuture = date > today;
+                const hasHistoricalData = historyData && historyData[dateStr] !== undefined;
+                const isToday = dateStr === todayStr;
+                
                 let tooltipText;
                 
-                if (historyData && historyData[dateStr] !== undefined) {
-                    // Use actual data from history API
+                if (isFuture) {
+                    // Future date - not yet occurred
+                    cell.className = 'heatmap-cell level-future';
+                    tooltipText = `${date.toLocaleDateString()}: Not yet occurred`;
+                } else if (hasHistoricalData) {
+                    // Has actual historical data from BadgerDB
                     const uptimeValue = historyData[dateStr]; // 0-1 range
-                    level = Math.floor(uptimeValue * 5);
+                    const level = calculateUptimeLevel(uptimeValue);
                     const uptimePercent = (uptimeValue * 100).toFixed(1);
+                    cell.className = `heatmap-cell level-${level}`;
                     tooltipText = `${date.toLocaleDateString()}: ${uptimePercent}% uptime`;
-                } else if (monitorsData && dateStr === todayStr) {
-                    // Use current monitor status for TODAY only
+                } else if (isToday && monitorsData) {
+                    // Current day - use live monitor status
                     const monitors = monitorsData.monitors || [];
                     const total = monitors.length;
                     const up = monitors.filter(m => m.status === 'up').length;
-                    const uptimePercent = total > 0 ? (up / total * 100) : 100;
-                    level = Math.floor((uptimePercent / 100) * 5);
-                    tooltipText = `${date.toLocaleDateString()}: ${uptimePercent.toFixed(1)}% uptime (current)`;
+                    const uptimeValue = total > 0 ? (up / total) : 1.0;
+                    const level = calculateUptimeLevel(uptimeValue);
+                    const uptimePercent = (uptimeValue * 100).toFixed(1);
+                    cell.className = `heatmap-cell level-${level}`;
+                    tooltipText = `${date.toLocaleDateString()}: ${uptimePercent}% uptime (current)`;
                 } else {
-                    // No data available - show as level 0 (gray)
-                    level = 0;
+                    // Past date with no data - Hall Monitor wasn't running
+                    cell.className = 'heatmap-cell level-past-nodata';
                     tooltipText = `${date.toLocaleDateString()}: No data (Hall Monitor not running)`;
                 }
                 
-                cell.classList.add(`level-${level}`);
                 cell.title = tooltipText;
-                
                 grid.appendChild(cell);
             }
         }

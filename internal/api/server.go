@@ -17,13 +17,18 @@ import (
 	"github.com/1broseidon/hallmonitor/internal/metrics"
 	"github.com/1broseidon/hallmonitor/internal/monitors"
 	"github.com/1broseidon/hallmonitor/internal/scheduler"
+	"github.com/1broseidon/hallmonitor/pkg/models"
 )
 
 //go:embed dashboard.html
 var dashboardHTML string
 
-//go:embed dashboard_ambient.html
-var dashboardAmbientHTML string
+// TODO: Re-enable ambient dashboard when needed
+// //go:embed dashboard_ambient.html
+// var dashboardAmbientHTML string
+
+//go:embed dashboard_advanced.html
+var dashboardAdvancedHTML string
 
 // Server represents the API server
 type Server struct {
@@ -35,11 +40,17 @@ type Server struct {
 	scheduler      *scheduler.Scheduler
 	prometheusReg  prometheus.Registerer
 	storage        StorageCloser
+	aggregator     dashboardAggregator
 }
 
 // StorageCloser interface for storage that needs cleanup
 type StorageCloser interface {
 	Close() error
+}
+
+// dashboardAggregator interface for dashboard-specific aggregation methods
+type dashboardAggregator interface {
+	GetAggregatesByPeriod(monitor string, start, end time.Time, periodType string) ([]*models.AggregateResult, error)
 }
 
 // NewServer creates a new API server without persistent storage
@@ -73,6 +84,7 @@ func NewServer(cfg *config.Config, logger *logging.Logger, prometheusReg prometh
 		monitorManager: monitorManager,
 		scheduler:      schedulerInstance,
 		prometheusReg:  prometheusReg,
+		aggregator:     nil, // No aggregation available without storage
 	}
 
 	// Setup middleware
@@ -116,6 +128,7 @@ func NewServerWithStorage(cfg *config.Config, logger *logging.Logger, prometheus
 		scheduler:      schedulerInstance,
 		prometheusReg:  prometheusReg,
 		storage:        storage,
+		aggregator:     aggregator.(dashboardAggregator), // Type assertion for dashboard-specific methods
 	}
 
 	// Setup middleware
@@ -168,6 +181,7 @@ func (s *Server) setupRoutes() {
 	if s.config.Server.EnableDashboard {
 		s.app.Get("/", s.dashboardHandler)
 		s.app.Get("/dashboard", s.dashboardHandler)
+		s.app.Get("/dashboard/advanced", s.dashboardAdvancedHandler)
 	}
 
 	// API v1 routes
@@ -185,15 +199,20 @@ func (s *Server) setupRoutes() {
 	api.Post("/reload", s.reloadConfigHandler)
 	api.Get("/config", s.getConfigHandler)
 
-	// Grafana export endpoint
-	if s.config.Server.EnableDashboard {
-		api.Get("/grafana/dashboard", s.exportGrafanaDashboardHandler)
-	}
+	// Grafana export endpoint (disabled for now)
+	// if s.config.Server.EnableDashboard {
+	//	api.Get("/grafana/dashboard", s.exportGrafanaDashboardHandler)
+	// }
 
 	// Grafana JSON API endpoints (for datasource compatibility)
 	api.Post("/query", s.grafanaQueryHandler)
 	api.Post("/query/tags", s.grafanaTagsHandler)
 	api.Get("/annotations", s.grafanaAnnotationsHandler)
+
+	// Advanced Dashboard endpoints
+	api.Get("/dashboard/overview", s.dashboardOverviewHandler)
+	api.Get("/dashboard/timeseries", s.dashboardTimeSeriesHandler)
+	api.Get("/dashboard/insights", s.dashboardInsightsHandler)
 }
 
 // Start starts the server
@@ -212,7 +231,7 @@ func (s *Server) Start() error {
 // Stop gracefully stops the server
 func (s *Server) Stop() error {
 	s.logger.WithComponent(logging.ComponentAPI).Info("Stopping HTTP server")
-	
+
 	// Close storage if present
 	if s.storage != nil {
 		if err := s.storage.Close(); err != nil {
@@ -221,7 +240,7 @@ func (s *Server) Stop() error {
 				Warn("Error closing storage")
 		}
 	}
-	
+
 	return s.app.Shutdown()
 }
 

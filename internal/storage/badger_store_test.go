@@ -9,7 +9,7 @@ import (
 	"github.com/1broseidon/hallmonitor/pkg/models"
 )
 
-func createTestStore(t *testing.T) (*BadgerStore, string) {
+func createTestStoreWithRetention(t *testing.T, retentionDays int) (*BadgerStore, string) {
 	t.Helper()
 
 	// Create temporary directory
@@ -25,17 +25,22 @@ func createTestStore(t *testing.T) (*BadgerStore, string) {
 		Output: "stdout",
 	})
 	if err != nil {
+		os.RemoveAll(tmpDir)
 		t.Fatalf("Failed to create logger: %v", err)
 	}
 
 	// Create store
-	store, err := NewBadgerStore(tmpDir, 7, logger)
+	store, err := NewBadgerStore(tmpDir, retentionDays, logger)
 	if err != nil {
 		os.RemoveAll(tmpDir)
 		t.Fatalf("Failed to create store: %v", err)
 	}
 
 	return store, tmpDir
+}
+
+func createTestStore(t *testing.T) (*BadgerStore, string) {
+	return createTestStoreWithRetention(t, 7)
 }
 
 func TestBadgerStore_StoreAndRetrieveResult(t *testing.T) {
@@ -242,3 +247,107 @@ func TestBadgerStore_MetadataOperations(t *testing.T) {
 	}
 }
 
+func TestBadgerStore_StoreResultNil(t *testing.T) {
+	store, tmpDir := createTestStore(t)
+	defer func() {
+		store.Close()
+		os.RemoveAll(tmpDir)
+	}()
+
+	if err := store.StoreResult(nil); err == nil {
+		t.Fatal("Expected error when storing nil result")
+	}
+}
+
+func TestBadgerStore_GetLatestResultNotFound(t *testing.T) {
+	store, tmpDir := createTestStore(t)
+	defer func() {
+		store.Close()
+		os.RemoveAll(tmpDir)
+	}()
+
+	result, err := store.GetLatestResult("unknown-monitor")
+	if err != nil {
+		t.Fatalf("Unexpected error retrieving latest result: %v", err)
+	}
+	if result != nil {
+		t.Fatalf("Expected nil result for unknown monitor, got %+v", result)
+	}
+}
+
+func TestBadgerStore_GetResultsRespectsLimit(t *testing.T) {
+	store, tmpDir := createTestStore(t)
+	defer func() {
+		store.Close()
+		os.RemoveAll(tmpDir)
+	}()
+
+	now := time.Now()
+	for i := 0; i < 5; i++ {
+		result := &models.MonitorResult{
+			Monitor:   "limit-monitor",
+			Type:      models.MonitorTypeHTTP,
+			Status:    models.StatusUp,
+			Duration:  time.Duration(50+i) * time.Millisecond,
+			Timestamp: now.Add(time.Duration(i) * time.Second),
+		}
+		if err := store.StoreResult(result); err != nil {
+			t.Fatalf("Failed to store result %d: %v", i, err)
+		}
+	}
+
+	start := now.Add(-1 * time.Second)
+	end := now.Add(10 * time.Second)
+
+	results, err := store.GetResults("limit-monitor", start, end, 3)
+	if err != nil {
+		t.Fatalf("Failed to get results: %v", err)
+	}
+	if len(results) != 3 {
+		t.Fatalf("Expected 3 results, got %d", len(results))
+	}
+}
+
+func TestBadgerStore_StoreAggregateInvalidPeriod(t *testing.T) {
+	store, tmpDir := createTestStore(t)
+	defer func() {
+		store.Close()
+		os.RemoveAll(tmpDir)
+	}()
+
+	now := time.Now()
+	err := store.StoreAggregate(&models.AggregateResult{
+		Monitor:     "test-monitor",
+		PeriodStart: now,
+		PeriodEnd:   now.Add(time.Hour),
+		PeriodType:  "week",
+	})
+	if err == nil {
+		t.Fatal("Expected error when storing aggregate with invalid period type")
+	}
+}
+
+func TestBadgerStore_GetAggregatesInvalidPeriod(t *testing.T) {
+	store, tmpDir := createTestStore(t)
+	defer func() {
+		store.Close()
+		os.RemoveAll(tmpDir)
+	}()
+
+	_, err := store.GetAggregates("test-monitor", "week", time.Now(), time.Now().Add(time.Hour))
+	if err == nil {
+		t.Fatal("Expected error when querying aggregates with invalid period type")
+	}
+}
+
+func TestBadgerStore_DefaultRetentionApplied(t *testing.T) {
+	store, tmpDir := createTestStoreWithRetention(t, 0)
+	defer func() {
+		store.Close()
+		os.RemoveAll(tmpDir)
+	}()
+
+	if store.retentionDays != 30 {
+		t.Fatalf("Expected default retention of 30 days, got %d", store.retentionDays)
+	}
+}

@@ -304,3 +304,44 @@ func (a *Aggregator) setLastAggregationTime(t time.Time) {
 	}
 }
 
+// GetAggregatesByPeriod returns aggregated data for a monitor within a time period
+func (a *Aggregator) GetAggregatesByPeriod(monitor string, start, end time.Time, periodType string) ([]*models.AggregateResult, error) {
+	return a.store.GetAggregatesByPeriod(monitor, start, end, periodType)
+}
+
+// GetAggregatedMetrics returns metrics for dashboard charts
+func (a *Aggregator) GetAggregatedMetrics(monitor string, start, end time.Time, granularity string) ([]AggregatorDataPoint, error) {
+	// Determine the period type based on granularity
+	var periodType string
+	switch granularity {
+	case "1m", "5m", "15m":
+		periodType = "hour" // Use hourly aggregates for minute granularity
+	case "1h":
+		periodType = "hour"
+	case "1d":
+		periodType = "day"
+	default:
+		periodType = "hour"
+	}
+
+	aggregates, err := a.GetAggregatesByPeriod(monitor, start, end, periodType)
+	if err != nil {
+		return nil, err
+	}
+
+	var dataPoints []AggregatorDataPoint
+	for _, agg := range aggregates {
+		dataPoints = append(dataPoints, AggregatorDataPoint{
+			Timestamp: agg.PeriodStart,
+			Value:     float64(agg.AvgDuration.Milliseconds()),
+		})
+	}
+
+	return dataPoints, nil
+}
+
+// AggregatorDataPoint represents a data point for aggregation
+type AggregatorDataPoint struct {
+	Timestamp time.Time `json:"timestamp"`
+	Value     float64   `json:"value"`
+}
