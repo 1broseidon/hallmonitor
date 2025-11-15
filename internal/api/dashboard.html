@@ -1571,8 +1571,14 @@
             const errorRate = totalChecks > 0 ? (totalErrors / totalChecks * 100) : 0;
 
 		// Update hero metric
-		document.getElementById('hero-uptime').textContent = uptime.toFixed(2);
-		document.getElementById('hero-sublabel').textContent = `${total - down} of ${total} monitors healthy`;
+		const heroUptimeEl = document.getElementById('hero-uptime');
+		if (heroUptimeEl) {
+			heroUptimeEl.textContent = uptime.toFixed(2);
+		}
+		const heroSubEl = document.getElementById('hero-sublabel');
+		if (heroSubEl) {
+			heroSubEl.textContent = `${total - down} of ${total} monitors healthy`;
+		}
 		const heroValue = document.getElementById('hero-ring');
 		const heroCaption = document.querySelector('.hero-caption');
 		const heroNarrative = document.getElementById('hero-narrative');
