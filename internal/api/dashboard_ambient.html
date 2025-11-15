@@ -146,6 +146,130 @@
             min-height: calc(100vh - 100px);
         }
 
+        .ambient-hero {
+            text-align: center;
+            padding: 2.5rem 2rem;
+            border-radius: 16px;
+            border: 1px solid;
+            margin-bottom: 2rem;
+        }
+
+        html[data-theme="dark"] .ambient-hero {
+            background: radial-gradient(circle at top, rgba(102, 126, 234, 0.12), rgba(10, 10, 10, 0.5));
+            border-color: rgba(255, 255, 255, 0.05);
+        }
+
+        html[data-theme="light"] .ambient-hero {
+            background: rgba(255, 255, 255, 0.8);
+            border-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .ambient-hero-title {
+            font-size: 0.85rem;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            opacity: 0.6;
+        }
+
+        .ambient-hero-uptime {
+            font-size: 4.5rem;
+            font-weight: 700;
+            margin: 0.4rem 0;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .ambient-hero-message {
+            font-size: 1rem;
+            opacity: 0.7;
+            letter-spacing: 0.02em;
+        }
+
+        .ambient-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .ambient-stack-card {
+            border: 1px solid;
+            border-radius: 12px;
+            padding: 1rem 1.25rem;
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        html[data-theme="dark"] .ambient-stack-card {
+            background: rgba(255, 255, 255, 0.02);
+            border-color: rgba(255, 255, 255, 0.04);
+        }
+
+        html[data-theme="light"] .ambient-stack-card {
+            background: #ffffff;
+            border-color: rgba(0, 0, 0, 0.06);
+        }
+
+        .stack-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .stack-dot.up {
+            background: #48c78e;
+        }
+
+        .stack-dot.down {
+            background: #f14668;
+        }
+
+        .stack-dot.unknown {
+            background: #ffdd57;
+        }
+
+        .stack-meta {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stack-meta strong {
+            font-size: 1.05rem;
+            font-weight: 600;
+        }
+
+        .stack-meta span {
+            font-size: 0.75rem;
+            opacity: 0.55;
+        }
+
+        .stack-uptime {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.15rem;
+        }
+
+        .ambient-ticker {
+            border-radius: 999px;
+            padding: 0.75rem 1.5rem;
+            border: 1px solid;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        html[data-theme="dark"] .ambient-ticker {
+            border-color: rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        html[data-theme="light"] .ambient-ticker {
+            border-color: rgba(0, 0, 0, 0.08);
+            background: rgba(0, 0, 0, 0.04);
+        }
+
         /* Micro Stats */
         .micro-stats {
             display: grid;
@@ -187,17 +311,24 @@
         }
 
         .micro-stat-value {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 0.25rem;
+            font-size: 2.25rem;
+            font-weight: 500;
+            margin-bottom: 0.35rem;
             font-family: 'JetBrains Mono', monospace;
+            line-height: 1.1;
         }
 
         .micro-stat-label {
             font-size: 0.75rem;
-            opacity: 0.7;
+            opacity: 0.5;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.08em;
+        }
+
+        .ambient-stack-placeholder {
+            text-align: center;
+            opacity: 0.6;
+            padding: 1.5rem 0;
         }
 
         /* Heatmap Card - matches metric view structure */
@@ -501,6 +632,12 @@
     </header>
 
     <div class="main-container">
+        <div class="ambient-hero">
+            <div class="ambient-hero-title">HALL MONITOR</div>
+            <div class="ambient-hero-uptime" id="ambient-hero-uptime">--%</div>
+            <div class="ambient-hero-message" id="ambient-hero-message">Listening for the next change...</div>
+        </div>
+
         <!-- Micro Stats -->
         <div class="micro-stats">
             <div class="micro-stat">
@@ -520,6 +657,12 @@
                     --
                 </div>
                 <div class="micro-stat-label">Incidents</div>
+            </div>
+        </div>
+
+        <div class="ambient-stack" id="ambientMonitorStack">
+            <div class="ambient-stack-placeholder">
+                <i class="fas fa-spinner fa-pulse"></i>
             </div>
         </div>
 
@@ -556,6 +699,10 @@
             </div>
         </div>
 
+        <div class="ambient-ticker" id="ambientTicker">
+            All systems calm.
+        </div>
+
         <!-- View Toggle -->
         <div class="view-toggle">
             <a href="#" onclick="switchToMetricView(); return false;">
@@ -571,6 +718,16 @@
         let monitorsData = null;
         let uptimeHistory = null;
         let currentTimeRange = 30; // Default to 30 days for ambient view
+
+        function escapeHtml(value) {
+            if (typeof value !== 'string') return value;
+            return value
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
 
         // Initialize theme
         function initTheme() {
@@ -807,6 +964,35 @@
             return value;
         }
 
+        function renderAmbientStack(monitors) {
+            const stack = document.getElementById('ambientMonitorStack');
+            if (!stack) return;
+
+            if (!monitors || monitors.length === 0) {
+                stack.innerHTML = '<div class="ambient-stack-placeholder">No monitors configured yet.</div>';
+                return;
+            }
+
+            const top = monitors.slice(0, 5).map(monitor => {
+                const name = escapeHtml(monitor.name);
+                const meta = escapeHtml(monitor.group || monitor.type || 'monitor');
+                const status = monitor.status || 'unknown';
+                const uptime = monitor.last_check || '--';
+                return `
+                    <div class="ambient-stack-card">
+                        <span class="stack-dot ${status}"></span>
+                        <span class="stack-meta">
+                            <strong>${name}</strong>
+                            <span>${meta}</span>
+                        </span>
+                        <span class="stack-uptime">${uptime ? uptime.split('T')[0] : '--'}</span>
+                    </div>
+                `;
+            }).join('');
+
+            stack.innerHTML = top;
+        }
+
         function updateUI(data) {
             const monitors = data.monitors || [];
             const total = monitors.length;
@@ -821,7 +1007,16 @@
                 ? (responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length)
                 : 0;
 
-            // Update micro stats
+            // Update hero + micro stats
+            const heroUptime = document.getElementById('ambient-hero-uptime');
+            const heroMessage = document.getElementById('ambient-hero-message');
+            if (heroUptime) heroUptime.textContent = `${uptime.toFixed(2)}%`;
+            if (heroMessage) {
+                heroMessage.textContent = down === 0
+                    ? 'Everything is steady.'
+                    : `${down} service${down > 1 ? 's' : ''} needs attention.`;
+            }
+
             document.getElementById('uptime-value').innerHTML = 
                 `${uptime.toFixed(2)}<span style="font-size: 1rem; opacity: 0.5;">%</span>`;
             document.getElementById('response-value').innerHTML = 
@@ -841,6 +1036,15 @@
             }
 
             incidentsEl.style.color = down === 0 ? '#48c78e' : '#f14668';
+
+            const ticker = document.getElementById('ambientTicker');
+            if (ticker) {
+                ticker.textContent = down === 0
+                    ? 'All systems calm. Last refresh ' + new Date().toLocaleTimeString()
+                    : `Attention: ${down} monitor${down > 1 ? 's are' : ' is'} degraded.`;
+            }
+
+            renderAmbientStack(monitors);
         }
 
         function calculateUptimeLevel(uptimeValue) {
@@ -1029,4 +1233,3 @@
     </script>
 </body>
 </html>
-

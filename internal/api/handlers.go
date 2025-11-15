@@ -94,12 +94,6 @@ func (s *Server) dashboardHandler(c *fiber.Ctx) error {
 	return c.SendString(dashboardHTML)
 }
 
-// dashboardAdvancedHandler serves the advanced dashboard HTML
-func (s *Server) dashboardAdvancedHandler(c *fiber.Ctx) error {
-	c.Set("Content-Type", "text/html; charset=utf-8")
-	return c.SendString(dashboardAdvancedHTML)
-}
-
 // dashboardAmbientHandler serves ambient dashboard HTML
 func (s *Server) dashboardAmbientHandler(c *fiber.Ctx) error {
 	c.Set("Content-Type", "text/html; charset=utf-8")
