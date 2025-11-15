@@ -1241,10 +1241,6 @@
         <!-- Compact Metrics -->
         <div class="metric-grid">
             <div class="compact-metric">
-                <div class="compact-metric-label">Response P95</div>
-                <div class="compact-metric-value" id="p95-value" style="color: #48c78e;">--ms</div>
-            </div>
-            <div class="compact-metric">
                 <div class="compact-metric-label">Active Monitors</div>
                 <div class="compact-metric-value" id="monitors-value" style="color: #667eea;">--</div>
             </div>
@@ -1687,6 +1683,15 @@
             return `${Math.floor(diffHour / 24)}d ago`;
         }
 
+        function formatDate(value) {
+            if (!value) return '—';
+            const date = new Date(value);
+            if (isNaN(date.getTime())) {
+                return value;
+            }
+            return date.toLocaleDateString();
+        }
+
         function updateMonitorList(monitors) {
             filteredMonitors = [...monitors];
             displayedCount = Math.min(50, filteredMonitors.length);
@@ -1794,131 +1799,107 @@
                     <tr class="detail-row">
                         <td colspan="6">
                             <div class="detail-content">
-                                <div class="detail-group">
-                                    <span class="detail-label">Service Name</span>
-                                    <span class="detail-value">${monitor.name}</span>
-                                </div>
-                                <div class="detail-group">
-                                    <span class="detail-label">Group</span>
-                                    <span class="detail-value">${monitor.group}</span>
-                                </div>
-                                <div class="detail-group">
-                                    <span class="detail-label">Enabled</span>
-                                    <span class="detail-value" style="color: ${monitor.enabled ? '#48c78e' : '#f14668'};">${monitor.enabled ? 'Yes' : 'No'}</span>
-                                </div>
-                                ${target !== 'N/A' ? `
-                                    <div class="detail-group">
-                                        <span class="detail-label">Target/URL</span>
-                                        <span class="detail-value">${target}</span>
-                                    </div>
-                                ` : ''}
-                                ${hostname ? `
-                                    <div class="detail-group">
-                                        <span class="detail-label">Hostname</span>
-                                        <span class="detail-value">${hostname}</span>
-                                    </div>
-                                ` : ''}
-                                ${ip ? `
-                                    <div class="detail-group">
-                                        <span class="detail-label">IP Address</span>
-                                        <span class="detail-value">${ip}</span>
-                                    </div>
-                                ` : ''}
-                                ${monitor.query ? `
-                                    <div class="detail-group">
-                                        <span class="detail-label">DNS Query</span>
-                                        <span class="detail-value">${monitor.query}</span>
-                                    </div>
-                                ` : ''}
-                                ${monitor.query_type ? `
-                                    <div class="detail-group">
-                                        <span class="detail-label">Query Type</span>
-                                        <span class="detail-value">${monitor.query_type}</span>
-                                    </div>
-                                ` : ''}
-                                ${monitor.port ? `
-                                    <div class="detail-group">
-                                        <span class="detail-label">Port</span>
-                                        <span class="detail-value">${monitor.port}</span>
-                                    </div>
-                                ` : ''}
-                                ${monitor.count ? `
-                                    <div class="detail-group">
-                                        <span class="detail-label">Ping Count</span>
-                                        <span class="detail-value">${monitor.count}</span>
-                                    </div>
-                                ` : ''}
-                                ${monitor.expected_status ? `
-                                    <div class="detail-group">
-                                        <span class="detail-label">Expected HTTP Status</span>
-                                        <span class="detail-value">${monitor.expected_status}</span>
-                                    </div>
-                                ` : ''}
-                                ${monitor.expected_response ? `
-                                    <div class="detail-group">
-                                        <span class="detail-label">Expected Response</span>
-                                        <span class="detail-value">${monitor.expected_response}</span>
-                                    </div>
-                                ` : ''}
-                                ${monitor.interval ? `
-                                    <div class="detail-group">
-                                        <span class="detail-label">Check Interval</span>
-                                        <span class="detail-value">${monitor.interval}</span>
-                                    </div>
-                                ` : ''}
-                                ${monitor.timeout ? `
-                                    <div class="detail-group">
-                                        <span class="detail-label">Timeout</span>
-                                        <span class="detail-value">${monitor.timeout}</span>
-                                    </div>
-                                ` : ''}
-                                ${monitor.headers && Object.keys(monitor.headers).length > 0 ? `
-                                    <div class="detail-group" style="grid-column: 1 / -1;">
-                                        <span class="detail-label">HTTP Headers</span>
-                                        <div style="margin-top: 0.5rem;">
-                                            ${Object.entries(monitor.headers).map(([key, value]) => `<span class="tag">${key}: ${value}</span>`).join('')}
-                                        </div>
-                                    </div>
-                                ` : ''}
-                                ${httpResult && httpResult.status_code ? `
-                                    <div class="detail-group">
-                                        <span class="detail-label">HTTP Status</span>
-                                        <span class="detail-value" style="color: ${httpResult.status_code >= 200 && httpResult.status_code < 300 ? '#48c78e' : '#f14668'};">${httpResult.status_code} ${httpResult.status_code === 200 ? 'OK' : ''}</span>
-                                    </div>
-                                ` : ''}
-                                ${pingResult && pingResult.packet_loss !== undefined ? `
-                                    <div class="detail-group">
-                                        <span class="detail-label">Packet Loss</span>
-                                        <span class="detail-value">${pingResult.packet_loss.toFixed(1)}%</span>
-                                    </div>
-                                ` : ''}
-                                ${dnsResult && dnsResult.answers ? `
-                                    <div class="detail-group" style="grid-column: 1 / -1;">
-                                        <span class="detail-label">DNS Answers</span>
-                                        <div style="margin-top: 0.5rem;">
-                                            ${Array.isArray(dnsResult.answers) ? dnsResult.answers.map(answer => `<span class="tag">${answer}</span>`).join('') : `<span class="tag">${dnsResult.answers}</span>`}
-                                        </div>
-                                    </div>
-                                ` : ''}
-                                ${monitor.error ? `
-                                    <div class="detail-group" style="grid-column: 1 / -1;">
-                                        <span class="detail-label">Error</span>
-                                        <span class="detail-value" style="color: #f14668;">${monitor.error}</span>
-                                    </div>
-                                ` : ''}
-                                ${monitor.labels && Object.keys(monitor.labels).length > 0 ? `
-                                    <div class="detail-group" style="grid-column: 1 / -1;">
-                                        <span class="detail-label">Labels</span>
-                                        <div style="margin-top: 0.5rem;">
-                                            ${Object.entries(monitor.labels).map(([key, value]) => `<span class="tag">${key}:${value}</span>`).join('')}
-                                        </div>
-                                    </div>
-                                ` : ''}
+                                ${renderDetailBlocks(monitor)}
                             </div>
                         </td>
                     </tr>
                 `;
             }).join('');
+        }
+
+        function renderDetailBlocks(monitor) {
+            const blocks = [];
+            const addBlock = (label, value, options = {}) => {
+                if (value === undefined || value === null || value === '') {
+                    return;
+                }
+                const full = options.full ? ' style="grid-column: 1 / -1;"' : '';
+                const raw = options.raw || false;
+                const displayValue = raw ? value : escapeHtml(String(value));
+                blocks.push(`
+                    <div class="detail-group"${full}>
+                        <span class="detail-label">${label}</span>
+                        <span class="detail-value">${displayValue}</span>
+                    </div>
+                `);
+            };
+
+            addBlock('Last check', formatTimeAgo(monitor.last_check));
+            addBlock('Monitor type', monitor.type?.toUpperCase());
+            addBlock('Current status', monitor.status === 'up' ? '<span style="color:#48c78e">Up</span>' : '<span style="color:#f14668">Down</span>', { raw: true });
+
+            const target = monitor.url || monitor.target || monitor.query;
+            if (target) {
+                addBlock('Target', target, { full: true });
+            }
+
+            if (monitor.error) {
+                addBlock('Current error', `<span style="color:#f14668;">${escapeHtml(monitor.error)}</span>`, { raw: true, full: true });
+            }
+
+            const httpResult = monitor.http_result || {};
+            if (httpResult.status_code) {
+                addBlock('HTTP status', `${httpResult.status_code}`);
+            }
+            if (httpResult.response_size) {
+                addBlock('Response size', `${httpResult.response_size} bytes`);
+            }
+            if (httpResult.ssl_cert_expiry) {
+                addBlock('SSL expires', formatDate(httpResult.ssl_cert_expiry));
+            }
+
+            const pingResult = monitor.ping_result || {};
+            if (pingResult.packet_loss !== undefined) {
+                addBlock('Packet loss', `${pingResult.packet_loss.toFixed(1)}%`);
+            }
+            if (pingResult.avg_rtt) {
+                addBlock('Average RTT', `${pingResult.avg_rtt}`);
+            }
+
+            const tcpResult = monitor.tcp_result || {};
+            if (tcpResult.port) {
+                addBlock('TCP port', tcpResult.port);
+            }
+            if (tcpResult.response_time) {
+                addBlock('Connect time', `${tcpResult.response_time}`);
+            }
+
+            const dnsResult = monitor.dns_result || {};
+            if (dnsResult.query_type) {
+                addBlock('DNS query type', dnsResult.query_type);
+            }
+            if (Array.isArray(dnsResult.answers) && dnsResult.answers.length > 0) {
+                const answers = dnsResult.answers.map(ans => `<span class="tag">${escapeHtml(ans)}</span>`).join('');
+                addBlock('DNS answers', `<div style="margin-top:0.25rem; display:flex; flex-wrap:wrap; gap:0.25rem;">${answers}</div>`, { raw: true, full: true });
+            }
+
+            if (monitor.labels && Object.keys(monitor.labels).length) {
+                const tags = Object.entries(monitor.labels).map(([key, value]) => `<span class="tag">${escapeHtml(key)}:${escapeHtml(value)}</span>`).join('');
+                addBlock('Labels', `<div style="margin-top:0.25rem; display:flex; flex-wrap:wrap; gap:0.25rem;">${tags}</div>`, { raw: true, full: true });
+            }
+
+            if (monitor.metadata && typeof monitor.metadata === 'object') {
+                const entries = Object.entries(monitor.metadata).map(([key, value]) => `<span class="tag">${escapeHtml(key)}:${escapeHtml(String(value))}</span>`).join('');
+                if (entries) {
+                    addBlock('Metadata', `<div style="margin-top:0.25rem; display:flex; flex-wrap:wrap; gap:0.25rem;">${entries}</div>`, { raw: true, full: true });
+                }
+            }
+
+            if (!blocks.length) {
+                addBlock('Details', 'No additional data');
+            }
+
+            return blocks.join('');
+        }
+
+        function escapeHtml(value) {
+            if (typeof value !== 'string') return value;
+            return value
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
         }
 
         function formatNumber(num) {
