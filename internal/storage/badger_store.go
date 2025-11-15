@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -16,6 +17,18 @@ type BadgerStore struct {
 	db            *badger.DB
 	logger        *logging.Logger
 	retentionDays int
+}
+
+const (
+	resultKeyPrefix    = "result"
+	latestKeyPrefix    = "latest"
+	aggregateKeyPrefix = "agg"
+	metaKeyPrefix      = "meta"
+	timestampKeyWidth  = 20
+)
+
+func formatTimestampKey(ts int64) string {
+	return fmt.Sprintf("%0*d", timestampKeyWidth, ts)
 }
 
 // NewBadgerStore creates a new BadgerDB-backed storage
@@ -58,7 +71,7 @@ func (bs *BadgerStore) StoreResult(result *models.MonitorResult) error {
 	}
 
 	// Generate key: result:{monitor_name}:{unix_nano_timestamp}
-	key := fmt.Sprintf("result:%s:%d", result.Monitor, result.Timestamp.UnixNano())
+	key := fmt.Sprintf("%s:%s:%s", resultKeyPrefix, result.Monitor, formatTimestampKey(result.Timestamp.UnixNano()))
 
 	// Marshal result to JSON
 	value, err := json.Marshal(result)
@@ -80,7 +93,7 @@ func (bs *BadgerStore) StoreResult(result *models.MonitorResult) error {
 	}
 
 	// Also update the latest result cache
-	latestKey := fmt.Sprintf("latest:%s", result.Monitor)
+	latestKey := fmt.Sprintf("%s:%s", latestKeyPrefix, result.Monitor)
 	err = bs.db.Update(func(txn *badger.Txn) error {
 		entry := badger.NewEntry([]byte(latestKey), value).WithTTL(ttl)
 		return txn.SetEntry(entry)
@@ -97,7 +110,7 @@ func (bs *BadgerStore) StoreResult(result *models.MonitorResult) error {
 
 // GetLatestResult retrieves the most recent result for a monitor
 func (bs *BadgerStore) GetLatestResult(monitor string) (*models.MonitorResult, error) {
-	latestKey := fmt.Sprintf("latest:%s", monitor)
+	latestKey := fmt.Sprintf("%s:%s", latestKeyPrefix, monitor)
 
 	var result *models.MonitorResult
 	err := bs.db.View(func(txn *badger.Txn) error {
@@ -128,9 +141,9 @@ func (bs *BadgerStore) GetResults(monitor string, start, end time.Time, limit in
 		limit = 1000 // default limit
 	}
 
-	prefix := []byte(fmt.Sprintf("result:%s:", monitor))
-	startKey := []byte(fmt.Sprintf("result:%s:%d", monitor, start.UnixNano()))
-	endKey := []byte(fmt.Sprintf("result:%s:%d", monitor, end.UnixNano()))
+	prefix := []byte(fmt.Sprintf("%s:%s:", resultKeyPrefix, monitor))
+	startKey := []byte(fmt.Sprintf("%s:%s:%s", resultKeyPrefix, monitor, formatTimestampKey(start.UnixNano())))
+	endKey := []byte(fmt.Sprintf("%s:%s:%s", resultKeyPrefix, monitor, formatTimestampKey(end.UnixNano())))
 
 	var results []*models.MonitorResult
 
@@ -141,12 +154,12 @@ func (bs *BadgerStore) GetResults(monitor string, start, end time.Time, limit in
 		defer it.Close()
 
 		// Seek to start position
-		for it.Seek(startKey); it.Valid(); it.Next() {
+		for it.Seek(startKey); it.ValidForPrefix(prefix); it.Next() {
 			item := it.Item()
 			key := item.Key()
 
 			// Check if we've exceeded the end key
-			if string(key) > string(endKey) {
+			if bytes.Compare(key, endKey) > 0 {
 				break
 			}
 
@@ -199,11 +212,11 @@ func (bs *BadgerStore) StoreAggregate(agg *models.AggregateResult) error {
 	var ttl time.Duration
 
 	if agg.PeriodType == "hour" {
-		key = fmt.Sprintf("agg:hour:%s:%d", agg.Monitor, agg.PeriodStart.Unix())
+		key = fmt.Sprintf("%s:hour:%s:%s", aggregateKeyPrefix, agg.Monitor, formatTimestampKey(agg.PeriodStart.Unix()))
 		// Hourly aggregates kept for 2x retention period
 		ttl = time.Duration(bs.retentionDays*2) * 24 * time.Hour
 	} else if agg.PeriodType == "day" {
-		key = fmt.Sprintf("agg:day:%s:%d", agg.Monitor, agg.PeriodStart.Unix())
+		key = fmt.Sprintf("%s:day:%s:%s", aggregateKeyPrefix, agg.Monitor, formatTimestampKey(agg.PeriodStart.Unix()))
 		// Daily aggregates kept for 1 year
 		ttl = 365 * 24 * time.Hour
 	} else {
@@ -235,9 +248,9 @@ func (bs *BadgerStore) GetAggregates(monitor string, periodType string, start, e
 		return nil, fmt.Errorf("invalid period type: %s", periodType)
 	}
 
-	prefix := []byte(fmt.Sprintf("agg:%s:%s:", periodType, monitor))
-	startKey := []byte(fmt.Sprintf("agg:%s:%s:%d", periodType, monitor, start.Unix()))
-	endKey := []byte(fmt.Sprintf("agg:%s:%s:%d", periodType, monitor, end.Unix()))
+	prefix := []byte(fmt.Sprintf("%s:%s:%s:", aggregateKeyPrefix, periodType, monitor))
+	startKey := []byte(fmt.Sprintf("%s:%s:%s:%s", aggregateKeyPrefix, periodType, monitor, formatTimestampKey(start.Unix())))
+	endKey := []byte(fmt.Sprintf("%s:%s:%s:%s", aggregateKeyPrefix, periodType, monitor, formatTimestampKey(end.Unix())))
 
 	var aggregates []*models.AggregateResult
 
@@ -247,12 +260,12 @@ func (bs *BadgerStore) GetAggregates(monitor string, periodType string, start, e
 		it := txn.NewIterator(opts)
 		defer it.Close()
 
-		for it.Seek(startKey); it.Valid(); it.Next() {
+		for it.Seek(startKey); it.ValidForPrefix(prefix); it.Next() {
 			item := it.Item()
 			key := item.Key()
 
 			// Check if we've exceeded the end key
-			if string(key) > string(endKey) {
+			if bytes.Compare(key, endKey) > 0 {
 				break
 			}
 
@@ -298,30 +311,20 @@ func (bs *BadgerStore) GetMonitorNames() ([]string, error) {
 		it := txn.NewIterator(opts)
 		defer it.Close()
 
-		prefix := []byte("result:")
+		prefix := []byte(resultKeyPrefix + ":")
 		for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
 			item := it.Item()
-			key := string(item.Key())
+			key := item.Key()
 
-			// Extract monitor name from key: result:{monitor_name}:{timestamp}
-			// Parse key to get monitor name
-			var monitorName string
-			fmt.Sscanf(key, "result:%s:", &monitorName)
+			rest := key[len(prefix):]
+			colonIdx := bytes.LastIndexByte(rest, ':')
+			if colonIdx <= 0 {
+				continue
+			}
+
+			monitorName := string(rest[:colonIdx])
 			if monitorName != "" {
-				// Remove the trailing colon and timestamp
-				// The format is "result:{name}:{timestamp}", so we need to extract just the name
-				parts := key[7:] // Skip "result:"
-				colonIdx := -1
-				for i := len(parts) - 1; i >= 0; i-- {
-					if parts[i] == ':' {
-						colonIdx = i
-						break
-					}
-				}
-				if colonIdx > 0 {
-					monitorName = parts[:colonIdx]
-					monitorNames[monitorName] = true
-				}
+				monitorNames[monitorName] = true
 			}
 		}
 
@@ -342,7 +345,7 @@ func (bs *BadgerStore) GetMonitorNames() ([]string, error) {
 
 // SetMetadata stores metadata (e.g., last aggregation time)
 func (bs *BadgerStore) SetMetadata(key string, value []byte) error {
-	metaKey := fmt.Sprintf("meta:%s", key)
+	metaKey := fmt.Sprintf("%s:%s", metaKeyPrefix, key)
 
 	return bs.db.Update(func(txn *badger.Txn) error {
 		// Metadata doesn't expire
@@ -352,7 +355,7 @@ func (bs *BadgerStore) SetMetadata(key string, value []byte) error {
 
 // GetMetadata retrieves metadata
 func (bs *BadgerStore) GetMetadata(key string) ([]byte, error) {
-	metaKey := fmt.Sprintf("meta:%s", key)
+	metaKey := fmt.Sprintf("%s:%s", metaKeyPrefix, key)
 
 	var value []byte
 	err := bs.db.View(func(txn *badger.Txn) error {

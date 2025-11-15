@@ -26,9 +26,6 @@ var dashboardHTML string
 //go:embed dashboard_ambient.html
 var dashboardAmbientHTML string
 
-//go:embed dashboard_advanced.html
-var dashboardAdvancedHTML string
-
 // Server represents the API server
 type Server struct {
 	app            *fiber.App
@@ -118,6 +115,16 @@ func NewServerWithStorage(cfg *config.Config, logger *logging.Logger, prometheus
 		ReadBufferSize:        16384, // 16KB buffer for request headers (mobile browsers + proxies can send large headers)
 	})
 
+	var dashboardAgg dashboardAggregator
+	if aggregator != nil {
+		if agg, ok := aggregator.(dashboardAggregator); ok {
+			dashboardAgg = agg
+		} else {
+			logger.WithComponent(logging.ComponentAPI).
+				Warn("Aggregator does not implement dashboard aggregator interface; dashboard metrics disabled")
+		}
+	}
+
 	s := &Server{
 		app:            app,
 		config:         cfg,
@@ -127,7 +134,7 @@ func NewServerWithStorage(cfg *config.Config, logger *logging.Logger, prometheus
 		scheduler:      schedulerInstance,
 		prometheusReg:  prometheusReg,
 		storage:        storage,
-		aggregator:     aggregator.(dashboardAggregator), // Type assertion for dashboard-specific methods
+		aggregator:     dashboardAgg,
 	}
 
 	// Setup middleware
@@ -180,7 +187,6 @@ func (s *Server) setupRoutes() {
 	if s.config.Server.EnableDashboard {
 		s.app.Get("/", s.dashboardHandler)
 		s.app.Get("/dashboard", s.dashboardHandler)
-		s.app.Get("/dashboard/advanced", s.dashboardAdvancedHandler)
 		s.app.Get("/dashboard/ambient", s.dashboardAmbientHandler)
 	}
 
@@ -208,11 +214,6 @@ func (s *Server) setupRoutes() {
 	api.Post("/query", s.grafanaQueryHandler)
 	api.Post("/query/tags", s.grafanaTagsHandler)
 	api.Get("/annotations", s.grafanaAnnotationsHandler)
-
-	// Advanced Dashboard endpoints
-	api.Get("/dashboard/overview", s.dashboardOverviewHandler)
-	api.Get("/dashboard/timeseries", s.dashboardTimeSeriesHandler)
-	api.Get("/dashboard/insights", s.dashboardInsightsHandler)
 }
 
 // Start starts the server

@@ -102,3 +102,39 @@ func TestResultStoreGetUptime(t *testing.T) {
 		t.Fatalf("expected uptime %.2f, got %.2f", expected, uptime)
 	}
 }
+
+func TestResultStoreGetHistoricalResultsInMemory(t *testing.T) {
+	rs := NewResultStore(10)
+	base := time.Now().Add(-10 * time.Minute)
+
+	for i := 0; i < 6; i++ {
+		ts := base.Add(time.Duration(i) * time.Minute)
+		rs.StoreResult("alpha", newResult("alpha", models.StatusUp, ts))
+	}
+
+	start := base.Add(2 * time.Minute)
+	end := base.Add(5 * time.Minute)
+
+	results, err := rs.GetHistoricalResults("alpha", start, end, 10)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if len(results) != 4 {
+		t.Fatalf("expected 4 results in range, got %d", len(results))
+	}
+
+	for i := 1; i < len(results); i++ {
+		if !results[i-1].Timestamp.Before(results[i].Timestamp) && !results[i-1].Timestamp.Equal(results[i].Timestamp) {
+			t.Fatalf("results not sorted chronologically")
+		}
+	}
+
+	limited, err := rs.GetHistoricalResults("alpha", start, end, 2)
+	if err != nil {
+		t.Fatalf("expected no error limiting results, got %v", err)
+	}
+	if len(limited) != 2 {
+		t.Fatalf("expected 2 limited results, got %d", len(limited))
+	}
+}

@@ -296,11 +296,49 @@ func (rs *ResultStore) GetUptime(monitorName string, period time.Duration) float
 // GetHistoricalResults retrieves results from persistent storage for a time range
 func (rs *ResultStore) GetHistoricalResults(monitorName string, start, end time.Time, limit int) ([]*models.MonitorResult, error) {
 	if rs.persistentStore == nil {
-		// No persistent storage, return empty results
-		return []*models.MonitorResult{}, nil
+		return rs.getHistoricalResultsFromMemory(monitorName, start, end, limit), nil
 	}
 
 	return rs.persistentStore.GetResults(monitorName, start, end, limit)
+}
+
+func (rs *ResultStore) getHistoricalResultsFromMemory(monitorName string, start, end time.Time, limit int) []*models.MonitorResult {
+	rs.mu.RLock()
+	defer rs.mu.RUnlock()
+
+	monitorResults, exists := rs.results[monitorName]
+	if !exists || monitorResults.Count == 0 {
+		return []*models.MonitorResult{}
+	}
+
+	matched := make([]*models.MonitorResult, 0, monitorResults.Count)
+	for i := 0; i < monitorResults.Count; i++ {
+		idx := (monitorResults.Index - 1 - i + rs.maxResults) % rs.maxResults
+		if idx < 0 || idx >= len(monitorResults.Results) {
+			continue
+		}
+		result := monitorResults.Results[idx]
+		if result == nil {
+			continue
+		}
+
+		if result.Timestamp.Before(start) || result.Timestamp.After(end) {
+			continue
+		}
+
+		matched = append(matched, result)
+	}
+
+	// Sort chronologically ascending
+	sort.Slice(matched, func(i, j int) bool {
+		return matched[i].Timestamp.Before(matched[j].Timestamp)
+	})
+
+	if limit > 0 && len(matched) > limit {
+		matched = matched[:limit]
+	}
+
+	return matched
 }
 
 // ResultStoreStats represents statistics about the result store
