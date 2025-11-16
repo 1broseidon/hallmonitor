@@ -1609,11 +1609,22 @@
 			heroNarrative.textContent = meetsSLA ? 'All services are within expected ranges.' : `${down} monitor${down > 1 ? 's' : ''} degraded · see Focus list.`;
 		}
 
-		// Update compact metrics
-		document.getElementById('p95-value').textContent = p95.toFixed(1) + 'ms';
-		document.getElementById('monitors-value').textContent = total;
-		document.getElementById('checks-value').textContent = formatNumber(totalChecks);
-		document.getElementById('error-rate-value').textContent = errorRate.toFixed(2) + '%';
+		// Update compact metrics (with null checks)
+		const p95ValueEl = document.getElementById('p95-value');
+		if (p95ValueEl) p95ValueEl.textContent = p95.toFixed(1) + 'ms';
+
+		const monitorsValueEl = document.getElementById('monitors-value');
+		if (monitorsValueEl) monitorsValueEl.textContent = total;
+
+		const checksValueEl = document.getElementById('checks-value');
+		if (checksValueEl) checksValueEl.textContent = formatNumber(totalChecks);
+
+		const errorRateValueEl = document.getElementById('error-rate-value');
+		if (errorRateValueEl) {
+			errorRateValueEl.textContent = errorRate.toFixed(2) + '%';
+			// Update color
+			errorRateValueEl.style.color = errorRate === 0 ? '#48c78e' : errorRate < 1 ? '#ffdd57' : '#f14668';
+		}
 
 		const heroMonitors = document.getElementById('hero-pill-monitors');
 		const heroIncidents = document.getElementById('hero-pill-incidents');
@@ -1629,10 +1640,6 @@
 				heroLastAlert.textContent = troubled ? `${troubled.name} · ${troubled.group || troubled.type}` : `${down} monitors degraded`;
 			}
 		}
-
-		// Update colors
-            const errorRateEl = document.getElementById('error-rate-value');
-            errorRateEl.style.color = errorRate === 0 ? '#48c78e' : errorRate < 1 ? '#ffdd57' : '#f14668';
 
             // Update monitor list
             updateMonitorList(monitors);
