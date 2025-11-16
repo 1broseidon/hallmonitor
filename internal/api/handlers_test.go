@@ -1,9 +1,11 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 
@@ -41,7 +43,7 @@ func createTestServer(t *testing.T) *Server {
 	reg := prometheus.NewRegistry()
 
 	// Create server (NewServer creates its own scheduler, monitor manager, etc.)
-	server := NewServer(cfg, logger, reg)
+	server := NewServer(cfg, "config.yml", logger, reg)
 	return server
 }
 
@@ -473,8 +475,60 @@ func TestGetConfigHandler(t *testing.T) {
 }
 
 func TestReloadConfigHandler(t *testing.T) {
-	server := createTestServer(t)
+	// Create a temporary config file for testing
+	tmpConfig := `
+server:
+  port: "7878"
+  host: "0.0.0.0"
+  enableDashboard: true
+
+monitoring:
+  defaultInterval: "30s"
+  defaultTimeout: "10s"
+  groups:
+    - name: "test-group"
+      monitors:
+        - type: "http"
+          name: "test-monitor"
+          url: "https://example.com"
+          expectedStatus: 200
+`
+	tmpFile, err := os.CreateTemp("", "test-config-*.yml")
+	if err != nil {
+		t.Fatalf("failed to create temp file: %v", err)
+	}
+	defer os.Remove(tmpFile.Name())
+
+	if _, err := tmpFile.WriteString(tmpConfig); err != nil {
+		t.Fatalf("failed to write temp config: %v", err)
+	}
+	tmpFile.Close()
+
+	// Create server with temp config path
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			Port:            "7878",
+			Host:            "0.0.0.0",
+			EnableDashboard: true,
+		},
+	}
+	logger, _ := logging.InitLogger(logging.Config{
+		Level:  "error",
+		Format: "json",
+	})
+	reg := prometheus.NewRegistry()
+	server := NewServer(cfg, tmpFile.Name(), logger, reg)
 	defer server.app.Shutdown()
+
+	// Start scheduler
+	if err := server.scheduler.Start(context.Background()); err != nil {
+		t.Fatalf("failed to start scheduler: %v", err)
+	}
+	defer func() {
+		if server.scheduler.IsRunning() {
+			server.scheduler.Stop()
+		}
+	}()
 
 	req := httptest.NewRequest("POST", "/api/v1/reload", nil)
 	resp, err := server.app.Test(req, -1)
@@ -484,7 +538,8 @@ func TestReloadConfigHandler(t *testing.T) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != fiber.StatusOK {
-		t.Fatalf("expected status 200, got %d", resp.StatusCode)
+		body, _ := io.ReadAll(resp.Body)
+		t.Fatalf("expected status 200, got %d: %s", resp.StatusCode, string(body))
 	}
 
 	var payload map[string]interface{}
@@ -492,8 +547,12 @@ func TestReloadConfigHandler(t *testing.T) {
 		t.Fatalf("failed to decode response: %v", err)
 	}
 
-	if payload["status"] != "pending" {
-		t.Fatalf("expected status 'pending', got %v", payload["status"])
+	if payload["success"] != true {
+		t.Fatalf("expected success true, got %v", payload["success"])
+	}
+
+	if payload["message"] != "Configuration reloaded successfully" {
+		t.Fatalf("unexpected message: %v", payload["message"])
 	}
 }
 

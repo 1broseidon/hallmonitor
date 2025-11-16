@@ -66,7 +66,7 @@ func main() {
 		}
 
 		// Create server with storage
-		server = api.NewServerWithStorage(cfg, logger, registry, badgerStore, aggregator, badgerStore)
+		server = api.NewServerWithStorage(cfg, *configPath, logger, registry, badgerStore, aggregator, badgerStore)
 
 		logger.WithFields(map[string]interface{}{
 			"path":          cfg.Storage.Path,
@@ -75,7 +75,7 @@ func main() {
 		}).Info("Persistent storage enabled")
 	} else {
 		// Create server without storage
-		server = api.NewServer(cfg, logger, registry)
+		server = api.NewServer(cfg, *configPath, logger, registry)
 		logger.Info("Running without persistent storage (data will be lost on restart)")
 	}
 

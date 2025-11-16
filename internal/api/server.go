@@ -3,7 +3,9 @@
 package api
 
 import (
+	"context"
 	"embed"
+	"fmt"
 	"html/template"
 	"strings"
 	"time"
@@ -62,6 +64,7 @@ type DashboardData struct {
 type Server struct {
 	app            *fiber.App
 	config         *config.Config
+	configPath     string
 	logger         *logging.Logger
 	metrics        *metrics.Metrics
 	monitorManager *monitors.MonitorManager
@@ -82,7 +85,7 @@ type dashboardAggregator interface {
 }
 
 // NewServer creates a new API server without persistent storage
-func NewServer(cfg *config.Config, logger *logging.Logger, prometheusReg prometheus.Registerer) *Server {
+func NewServer(cfg *config.Config, configPath string, logger *logging.Logger, prometheusReg prometheus.Registerer) *Server {
 	// Create metrics instance
 	metricsInstance := metrics.NewMetrics(prometheusReg)
 
@@ -107,6 +110,7 @@ func NewServer(cfg *config.Config, logger *logging.Logger, prometheusReg prometh
 	s := &Server{
 		app:            app,
 		config:         cfg,
+		configPath:     configPath,
 		logger:         logger,
 		metrics:        metricsInstance,
 		monitorManager: monitorManager,
@@ -125,7 +129,7 @@ func NewServer(cfg *config.Config, logger *logging.Logger, prometheusReg prometh
 }
 
 // NewServerWithStorage creates a new API server with persistent storage
-func NewServerWithStorage(cfg *config.Config, logger *logging.Logger, prometheusReg prometheus.Registerer, persistentStore scheduler.PersistentStore, aggregator scheduler.Aggregator, storage StorageCloser) *Server {
+func NewServerWithStorage(cfg *config.Config, configPath string, logger *logging.Logger, prometheusReg prometheus.Registerer, persistentStore scheduler.PersistentStore, aggregator scheduler.Aggregator, storage StorageCloser) *Server {
 	// Create metrics instance
 	metricsInstance := metrics.NewMetrics(prometheusReg)
 
@@ -160,6 +164,7 @@ func NewServerWithStorage(cfg *config.Config, logger *logging.Logger, prometheus
 	s := &Server{
 		app:            app,
 		config:         cfg,
+		configPath:     configPath,
 		logger:         logger,
 		metrics:        metricsInstance,
 		monitorManager: monitorManager,
@@ -285,6 +290,44 @@ func (s *Server) GetMonitorManager() *monitors.MonitorManager {
 // GetScheduler returns the scheduler
 func (s *Server) GetScheduler() *scheduler.Scheduler {
 	return s.scheduler
+}
+
+// ReloadConfig reloads the configuration and restarts monitors
+func (s *Server) ReloadConfig(ctx context.Context) error {
+	s.logger.WithComponent(logging.ComponentAPI).Info("Reloading configuration")
+
+	// Load new configuration from file
+	newConfig, err := config.LoadConfig(s.configPath)
+	if err != nil {
+		return fmt.Errorf("failed to load configuration: %w", err)
+	}
+
+	// Validate new configuration
+	if err := newConfig.Validate(); err != nil {
+		return fmt.Errorf("invalid configuration: %w", err)
+	}
+
+	// Reload monitors with new configuration
+	if err := s.monitorManager.Reload(newConfig.Monitoring.Groups); err != nil {
+		return fmt.Errorf("failed to reload monitors: %w", err)
+	}
+
+	// Reload scheduler to pick up new monitors
+	if err := s.scheduler.Reload(ctx); err != nil {
+		return fmt.Errorf("failed to reload scheduler: %w", err)
+	}
+
+	// Update server config reference
+	s.config = newConfig
+
+	s.logger.WithComponent(logging.ComponentAPI).
+		WithFields(map[string]interface{}{
+			"total_monitors": len(s.monitorManager.GetMonitors()),
+			"total_groups":   len(s.monitorManager.GetGroups()),
+		}).
+		Info("Configuration reloaded successfully")
+
+	return nil
 }
 
 // errorHandler handles Fiber errors

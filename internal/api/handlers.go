@@ -434,12 +434,23 @@ func (s *Server) getGroupHandler(c *fiber.Ctx) error {
 
 // reloadConfigHandler handles configuration reload requests
 func (s *Server) reloadConfigHandler(c *fiber.Ctx) error {
-	// TODO: Implement config reload
 	s.logger.WithComponent("api").Info("Config reload requested")
 
+	// Reload configuration
+	if err := s.ReloadConfig(c.Context()); err != nil {
+		s.logger.WithComponent("api").WithError(err).Error("Failed to reload configuration")
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"success": false,
+			"message": "Failed to reload configuration",
+			"error":   err.Error(),
+		})
+	}
+
 	return c.JSON(fiber.Map{
-		"message": "Configuration reload not yet implemented",
-		"status":  "pending",
+		"success":        true,
+		"message":        "Configuration reloaded successfully",
+		"total_monitors": len(s.monitorManager.GetMonitors()),
+		"total_groups":   len(s.monitorManager.GetGroups()),
 	})
 }
 

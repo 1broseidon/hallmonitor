@@ -344,6 +344,12 @@ func (m *MonitorManager) GetGroups() []string {
 	return groupList
 }
 
+// Reload replaces all monitors with new ones from the provided groups
+func (m *MonitorManager) Reload(groups []models.MonitorGroup) error {
+	m.logger.WithComponent(logging.ComponentMonitor).Info("Reloading monitors")
+	return m.LoadMonitors(groups)
+}
+
 // updateMonitorCountMetrics updates Prometheus metrics for monitor counts
 func (m *MonitorManager) updateMonitorCountMetrics() {
 	if m.metrics == nil {

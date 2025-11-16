@@ -4,6 +4,7 @@ package scheduler
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -125,6 +126,30 @@ func (s *Scheduler) Stop() error {
 	s.wg.Wait()
 
 	s.running = false
+	return nil
+}
+
+// Reload restarts the scheduler with updated monitors
+func (s *Scheduler) Reload(ctx context.Context) error {
+	s.logger.WithComponent(logging.ComponentScheduler).Info("Reloading scheduler")
+
+	// Stop the scheduler
+	if err := s.Stop(); err != nil {
+		return fmt.Errorf("failed to stop scheduler: %w", err)
+	}
+
+	// Reset the stop channel for restart
+	s.stopChan = make(chan struct{})
+
+	// Create a new worker pool (old one has closed channels)
+	s.workers = NewWorkerPool(10, s.logger, s.metrics)
+
+	// Start the scheduler again
+	if err := s.Start(ctx); err != nil {
+		return fmt.Errorf("failed to start scheduler: %w", err)
+	}
+
+	s.logger.WithComponent(logging.ComponentScheduler).Info("Scheduler reloaded successfully")
 	return nil
 }
 
