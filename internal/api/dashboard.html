@@ -1229,11 +1229,18 @@
                         Red/Yellow/Green = Uptime data • Striped gray = Past no data • Light dotted = Future
                     </p>
                 </div>
-                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.75rem;">
+                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.75rem;"
+                     x-data="heatmapRangeManager()">
                     <div class="time-range-toggle">
-                        <button class="time-range-btn" onclick="setTimeRange(7)">7d</button>
-                        <button class="time-range-btn" onclick="setTimeRange(30)">30d</button>
-                        <button class="time-range-btn active" onclick="setTimeRange(90)">90d</button>
+                        <button class="time-range-btn"
+                                :class="{ 'active': range === 7 }"
+                                @click="setRange(7)">7d</button>
+                        <button class="time-range-btn"
+                                :class="{ 'active': range === 30 }"
+                                @click="setRange(30)">30d</button>
+                        <button class="time-range-btn"
+                                :class="{ 'active': range === 90 }"
+                                @click="setRange(90)">90d</button>
                     </div>
                     <div class="heatmap-legend">
                         <span style="opacity: 0.6;">Low</span>
@@ -1341,6 +1348,24 @@
             };
         }
 
+        // Alpine.js heatmap range manager
+        function heatmapRangeManager() {
+            return {
+                range: 90,
+                init() {
+                    const saved = localStorage.getItem('hallmonitor_timeRange_metric');
+                    this.range = saved ? parseInt(saved) : 90;
+                    currentTimeRange = this.range;
+                },
+                setRange(days) {
+                    this.range = days;
+                    currentTimeRange = days;
+                    localStorage.setItem('hallmonitor_timeRange_metric', days.toString());
+                    generateHeatmap(uptimeHistory);
+                }
+            };
+        }
+
         const API_ENDPOINT = '/api/v1';
         const SLA_THRESHOLD = 99.9;
         let monitorsData = null;
@@ -1366,35 +1391,6 @@
             return true; // Continue initialization
         }
 
-        // Initialize settings from localStorage
-        function initSettings() {
-            // Check if we should redirect to preferred view
-            if (!checkViewPreference()) {
-                return; // Don't initialize if we're redirecting
-            }
-            
-            // Restore time range preference for metric view
-            const savedTimeRange = localStorage.getItem('hallmonitor_timeRange_metric');
-            if (savedTimeRange) {
-                currentTimeRange = parseInt(savedTimeRange, 10);
-            }
-            
-            // Update button active state
-            updateTimeRangeButtons();
-        }
-
-        function updateTimeRangeButtons() {
-            document.querySelectorAll('.time-range-btn').forEach(btn => {
-                btn.classList.remove('active');
-                // Check if this button matches current time range
-                const btnOnClick = btn.getAttribute('onclick');
-                const match = btnOnClick.match(/setTimeRange\((\d+)\)/);
-                if (match && parseInt(match[1], 10) === currentTimeRange) {
-                    btn.classList.add('active');
-                }
-            });
-        }
-
         // Resize handler for heatmap recalculation
         let resizeTimeout;
         function handleResize() {
@@ -1408,24 +1404,19 @@
 
         // Initialize on load
         document.addEventListener('DOMContentLoaded', async () => {
-            initSettings();
+            // Check view preference before loading
+            if (!checkViewPreference()) {
+                return; // Don't initialize if redirecting
+            }
+
             await loadData();
             await loadUptimeHistory();
             // Note: Auto-refresh now handled by htmx (every 30s)
+            // Note: Time range now managed by Alpine heatmapRangeManager()
 
             // Add resize listener for responsive heatmap
             window.addEventListener('resize', handleResize);
         });
-
-        function setTimeRange(days) {
-            currentTimeRange = days;
-            // Save to localStorage
-            localStorage.setItem('hallmonitor_timeRange_metric', days.toString());
-            // Update button states
-            updateTimeRangeButtons();
-            // Regenerate heatmap
-            generateHeatmap(uptimeHistory);
-        }
 
         async function loadData() {
             try {
