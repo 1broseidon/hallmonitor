@@ -1265,13 +1265,13 @@
         <div class="monitor-list-compact">
             <div class="table-header">
                 <div class="table-title">Monitor Performance</div>
-                <div class="search-box">
-                    <input 
-                        type="text" 
-                        class="search-input" 
+                <div class="search-box" x-data="{ query: '' }">
+                    <input
+                        type="text"
+                        class="search-input"
                         placeholder="Search monitors..."
-                        id="searchInput"
-                        oninput="handleSearch()"
+                        x-model="query"
+                        @input.debounce.300ms="handleSearch(query)"
                     >
                     <i class="fas fa-search search-icon"></i>
                 </div>
@@ -1635,16 +1635,15 @@
         let displayedCount = 50;
         const batchSize = 20;
         let isLoading = false;
-        let searchQuery = '';
 
-        function handleSearch() {
-            searchQuery = document.getElementById('searchInput').value.toLowerCase();
+        function handleSearch(query) {
+            const searchQuery = query.toLowerCase();
             const allMonitors = monitorsData?.monitors || [];
-            
+
             if (searchQuery === '') {
                 filteredMonitors = [...allMonitors];
             } else {
-                filteredMonitors = allMonitors.filter(monitor => 
+                filteredMonitors = allMonitors.filter(monitor =>
                     monitor.name.toLowerCase().includes(searchQuery) ||
                     monitor.type.toLowerCase().includes(searchQuery) ||
                     monitor.group.toLowerCase().includes(searchQuery) ||
@@ -1656,7 +1655,7 @@
                     (monitor.labels && Object.values(monitor.labels).some(v => v.toLowerCase().includes(searchQuery)))
                 );
             }
-            
+
             displayedCount = Math.min(50, filteredMonitors.length);
             renderTable();
         }
