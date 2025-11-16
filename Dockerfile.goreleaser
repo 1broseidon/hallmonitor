@@ -1,0 +1,50 @@
+# Optimized Dockerfile for GoReleaser
+# Uses pre-built binaries instead of compiling from source
+
+FROM alpine:3.19
+
+# Install runtime dependencies
+RUN apk --no-cache add \
+    ca-certificates \
+    tzdata \
+    wget \
+    libcap \
+    && update-ca-certificates
+
+# Create non-root user for security
+RUN addgroup -g 1000 -S hallmonitor && \
+    adduser -u 1000 -S hallmonitor -G hallmonitor
+
+# Create necessary directories with proper permissions
+RUN mkdir -p /etc/hallmonitor /var/lib/hallmonitor && \
+    chown -R hallmonitor:hallmonitor /etc/hallmonitor /var/lib/hallmonitor
+
+# Set working directory
+WORKDIR /app
+
+# Copy pre-built binary from GoReleaser
+COPY hallmonitor /usr/local/bin/hallmonitor
+
+# Set capabilities for ICMP ping
+RUN chmod +x /usr/local/bin/hallmonitor && \
+    setcap cap_net_raw+ep /usr/local/bin/hallmonitor
+
+# Copy example config
+COPY config.example.yml /app/config.example.yml
+
+# Switch to non-root user
+USER hallmonitor
+
+# Set working directory for data
+WORKDIR /var/lib/hallmonitor
+
+# Expose port
+EXPOSE 7878
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:7878/health || exit 1
+
+# Set default command
+ENTRYPOINT ["/usr/local/bin/hallmonitor"]
+CMD ["--config", "/etc/hallmonitor/config.yml"]
