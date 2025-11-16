@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="color-scheme" content="dark">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Hall Monitor - Ambient View</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -32,6 +35,7 @@
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
             line-height: 1.6;
+            overflow: hidden;
         }
 
         /* Theme Styles */
@@ -51,676 +55,329 @@
 
         /* Header */
         .top-header {
-            position: sticky;
+            position: fixed;
             top: 0;
+            left: 0;
+            right: 0;
             z-index: 100;
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
-            border-bottom: 1px solid;
-            transition: var(--transition);
         }
 
         html[data-theme="dark"] .top-header {
-            background-color: rgba(10, 10, 10, 0.8);
-            border-bottom-color: rgba(255, 255, 255, 0.08);
+            background: rgba(10, 10, 10, 0.85);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         html[data-theme="light"] .top-header {
-            background-color: rgba(255, 255, 255, 0.8);
-            border-bottom-color: rgba(0, 0, 0, 0.08);
+            background: rgba(245, 245, 245, 0.85);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
         }
 
         .header-content {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 1rem 2rem;
-            max-width: 1400px;
+            max-width: 100%;
             margin: 0 auto;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .header-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            letter-spacing: -0.02em;
-            margin: 0;
             display: flex;
             align-items: center;
             gap: 0.75rem;
+            font-size: 1rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
         }
 
-        html[data-theme="dark"] .header-title {
-            color: #ffffff;
+        .header-title svg {
+            width: 28px;
+            height: 28px;
         }
 
-        html[data-theme="light"] .header-title {
-            color: #111;
+        .header-title-text {
+            font-size: 1rem;
+            font-weight: 600;
         }
 
         .header-actions {
             display: flex;
-            align-items: center;
-            gap: 0.5rem;
+            gap: 0.75rem;
         }
 
         .header-btn {
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            border: none;
-            font-size: 0.875rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: var(--transition);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-family: inherit;
-        }
-
-        html[data-theme="dark"] .header-btn {
-            background-color: rgba(255, 255, 255, 0.08);
-            color: #e0e0e0;
-        }
-
-        html[data-theme="dark"] .header-btn:hover {
-            background-color: rgba(255, 255, 255, 0.12);
-        }
-
-        html[data-theme="light"] .header-btn {
-            background-color: rgba(0, 0, 0, 0.04);
-            color: #111;
-        }
-
-        html[data-theme="light"] .header-btn:hover {
-            background-color: rgba(0, 0, 0, 0.08);
-        }
-
-        .header-btn-icon-only {
-            padding: 0.5rem;
-            width: 36px;
-            height: 36px;
-            justify-content: center;
-        }
-
-        /* Main Container */
-        .main-container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 2rem;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            min-height: calc(100vh - 100px);
-        }
-
-        .ambient-hero {
-            text-align: center;
-            padding: 2.5rem 2rem;
-            border-radius: 16px;
-            border: 1px solid;
-            margin-bottom: 2rem;
-        }
-
-        html[data-theme="dark"] .ambient-hero {
-            background: radial-gradient(circle at top, rgba(102, 126, 234, 0.12), rgba(10, 10, 10, 0.5));
-            border-color: rgba(255, 255, 255, 0.05);
-        }
-
-        html[data-theme="light"] .ambient-hero {
-            background: rgba(255, 255, 255, 0.8);
-            border-color: rgba(0, 0, 0, 0.05);
-        }
-
-        .ambient-hero-title {
-            font-size: 0.85rem;
-            letter-spacing: 0.3em;
-            text-transform: uppercase;
-            opacity: 0.6;
-        }
-
-        .ambient-hero-uptime {
-            font-size: 4.5rem;
-            font-weight: 700;
-            margin: 0.4rem 0;
-            font-family: 'JetBrains Mono', monospace;
-        }
-
-        .ambient-hero-message {
-            font-size: 1rem;
-            opacity: 0.7;
-            letter-spacing: 0.02em;
-        }
-
-        .ambient-stack {
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-            margin-bottom: 2.5rem;
-        }
-
-        .ambient-stack-card {
-            border: 1px solid;
-            border-radius: 12px;
-            padding: 1rem 1.25rem;
-            display: grid;
-            grid-template-columns: auto 1fr auto;
-            gap: 1rem;
-            align-items: center;
-        }
-
-        html[data-theme="dark"] .ambient-stack-card {
-            background: rgba(255, 255, 255, 0.02);
-            border-color: rgba(255, 255, 255, 0.04);
-        }
-
-        html[data-theme="light"] .ambient-stack-card {
-            background: #ffffff;
-            border-color: rgba(0, 0, 0, 0.06);
-        }
-
-        .stack-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-        }
-
-        .stack-dot.up {
-            background: #48c78e;
-        }
-
-        .stack-dot.down {
-            background: #f14668;
-        }
-
-        .stack-dot.unknown {
-            background: #ffdd57;
-        }
-
-        .stack-meta {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .stack-meta strong {
-            font-size: 1.05rem;
-            font-weight: 600;
-        }
-
-        .stack-meta span {
-            font-size: 0.75rem;
-            opacity: 0.55;
-        }
-
-        .stack-uptime {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 1.15rem;
-        }
-
-        .ambient-ticker {
-            border-radius: 999px;
-            padding: 0.75rem 1.5rem;
-            border: 1px solid;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            font-size: 0.9rem;
-            opacity: 0.8;
-        }
-
-        html[data-theme="dark"] .ambient-ticker {
-            border-color: rgba(255, 255, 255, 0.08);
-            background: rgba(255, 255, 255, 0.04);
-        }
-
-        html[data-theme="light"] .ambient-ticker {
-            border-color: rgba(0, 0, 0, 0.08);
-            background: rgba(0, 0, 0, 0.04);
-        }
-
-        /* Micro Stats */
-        .micro-stats {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1rem;
-            margin-bottom: 3rem;
-        }
-
-        .micro-stat {
-            text-align: center;
-            padding: 1.5rem 1rem;
-            border-radius: 8px;
-            border: 1px solid;
-            transition: var(--transition);
-        }
-
-        html[data-theme="dark"] .micro-stat {
-            background: rgba(255, 255, 255, 0.02);
-            border-color: rgba(255, 255, 255, 0.05);
-        }
-
-        html[data-theme="light"] .micro-stat {
-            background: #ffffff;
-            border-color: rgba(0, 0, 0, 0.08);
-        }
-
-        .micro-stat:hover {
-            transform: translateY(-2px);
-        }
-
-        html[data-theme="dark"] .micro-stat:hover {
-            background: rgba(255, 255, 255, 0.05);
-            border-color: rgba(255, 255, 255, 0.12);
-        }
-
-        html[data-theme="light"] .micro-stat:hover {
-            border-color: rgba(0, 0, 0, 0.12);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-        }
-
-        .micro-stat-value {
-            font-size: 2.25rem;
-            font-weight: 500;
-            margin-bottom: 0.35rem;
-            font-family: 'JetBrains Mono', monospace;
-            line-height: 1.1;
-        }
-
-        .micro-stat-label {
-            font-size: 0.75rem;
-            opacity: 0.5;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-        }
-
-        .ambient-stack-placeholder {
-            text-align: center;
-            opacity: 0.6;
-            padding: 1.5rem 0;
-        }
-
-        /* Heatmap Card - matches metric view structure */
-        .heatmap-card {
-            border-radius: 12px;
-            padding: 2rem;
-            border: 1px solid;
-            display: flex;
-            flex-direction: column;
-            min-height: 320px;
-            max-height: 400px;
-            height: 380px;
-        }
-
-        html[data-theme="dark"] .heatmap-card {
-            background: rgba(255, 255, 255, 0.02);
-            border-color: rgba(255, 255, 255, 0.05);
-        }
-
-        html[data-theme="light"] .heatmap-card {
-            background: #ffffff;
-            border-color: rgba(0, 0, 0, 0.08);
-        }
-
-        .heatmap-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 1.5rem;
-            flex-wrap: wrap;
-            gap: 1rem;
-            flex-shrink: 0;
-        }
-
-        .time-range-toggle {
-            display: flex;
-            gap: 0.25rem;
-            background: rgba(255, 255, 255, 0.03);
-            padding: 0.25rem;
-            border-radius: 6px;
-        }
-
-        html[data-theme="light"] .time-range-toggle {
-            background: rgba(0, 0, 0, 0.03);
-        }
-
-        .time-range-btn {
-            padding: 0.25rem 0.75rem;
-            border: none;
-            background: transparent;
-            color: inherit;
-            font-size: 0.75rem;
-            font-weight: 500;
-            cursor: pointer;
-            border-radius: 4px;
-            transition: var(--transition);
-            opacity: 0.5;
-        }
-
-        .time-range-btn:hover {
-            opacity: 0.8;
-        }
-
-        .time-range-btn.active {
-            opacity: 1;
-        }
-
-        html[data-theme="dark"] .time-range-btn.active {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        html[data-theme="light"] .time-range-btn.active {
-            background: rgba(0, 0, 0, 0.08);
-        }
-
-        .heatmap-title {
-            font-size: 0.875rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            opacity: 0.7;
-        }
-
-        .heatmap-legend {
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
-            font-size: 0.75rem;
-            opacity: 0.5;
-        }
-
-        .legend-box {
-            width: 12px;
-            height: 12px;
-            border-radius: 2px;
-        }
-
-        .legend-box.level-0 { background: rgba(255, 255, 255, 0.03); }
-        .legend-box.level-1 { background: rgba(72, 199, 142, 0.15); }
-        .legend-box.level-2 { background: rgba(72, 199, 142, 0.35); }
-        .legend-box.level-3 { background: rgba(72, 199, 142, 0.55); }
-        .legend-box.level-4 { background: rgba(72, 199, 142, 0.75); }
-        .legend-box.level-5 { background: rgba(72, 199, 142, 0.95); }
-
-        .heatmap-grid {
-            display: grid;
-            /* grid-template-columns and grid-auto-rows set dynamically by JavaScript */
-            gap: 3px;
-            flex: 1 1 auto;
-            min-height: 0;
-            width: 100%;
-            overflow: hidden;
-        }
-
-        .heatmap-cell {
-            aspect-ratio: 1;
-            border-radius: 2px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            min-width: 0;
-            min-height: 0;
-        }
-
-        .heatmap-cell:hover {
-            transform: scale(1.3);
-            z-index: 10;
-        }
-
-        /* Minimalist Ambient Design - Past no-data (nearly invisible dark) */
-        html[data-theme="dark"] .heatmap-cell.level-past-nodata {
-            background: rgba(40, 40, 40, 0.1);
-            border: 1px solid rgba(60, 60, 60, 0.15);
-        }
-
-        html[data-theme="light"] .heatmap-cell.level-past-nodata {
-            background: rgba(180, 180, 180, 0.12);
-            border: 1px solid rgba(160, 160, 160, 0.2);
-        }
-
-        /* Data - Single-hue gradient (green only, varying intensity) */
-        html[data-theme="dark"] .heatmap-cell.level-1 { 
-            background: rgba(72, 199, 142, 0.15);
-        }
-        html[data-theme="dark"] .heatmap-cell.level-2 { 
-            background: rgba(72, 199, 142, 0.35);
-        }
-        html[data-theme="dark"] .heatmap-cell.level-3 { 
-            background: rgba(72, 199, 142, 0.55);
-        }
-        html[data-theme="dark"] .heatmap-cell.level-4 { 
-            background: rgba(72, 199, 142, 0.75);
-        }
-        html[data-theme="dark"] .heatmap-cell.level-5 { 
-            background: rgba(72, 199, 142, 0.95);
-        }
-
-        /* Bright pulse on hover for level 5 */
-        html[data-theme="dark"] .heatmap-cell.level-5:hover {
-            background: rgba(72, 199, 142, 1);
-            box-shadow: 0 0 12px rgba(72, 199, 142, 0.5);
-        }
-
-        html[data-theme="light"] .heatmap-cell.level-1 { 
-            background: rgba(72, 199, 142, 0.25);
-        }
-        html[data-theme="light"] .heatmap-cell.level-2 { 
-            background: rgba(72, 199, 142, 0.45);
-        }
-        html[data-theme="light"] .heatmap-cell.level-3 { 
-            background: rgba(72, 199, 142, 0.65);
-        }
-        html[data-theme="light"] .heatmap-cell.level-4 { 
-            background: rgba(72, 199, 142, 0.8);
-        }
-        html[data-theme="light"] .heatmap-cell.level-5 { 
-            background: rgba(72, 199, 142, 0.95);
-        }
-
-        html[data-theme="light"] .heatmap-cell.level-5:hover {
-            background: rgba(72, 199, 142, 1);
-            box-shadow: 0 0 12px rgba(72, 199, 142, 0.4);
-        }
-
-        /* Future - Very faint blue glow */
-        html[data-theme="dark"] .heatmap-cell.level-future {
-            background: rgba(100, 126, 234, 0.03);
-            border: 1px solid rgba(100, 126, 234, 0.1);
-        }
-
-        html[data-theme="light"] .heatmap-cell.level-future {
-            background: rgba(100, 126, 234, 0.05);
-            border: 1px solid rgba(100, 126, 234, 0.15);
-        }
-
-        /* View Toggle */
-        .view-toggle {
-            text-align: center;
-            padding: 1rem;
-            opacity: 0.5;
-            transition: opacity 0.3s ease;
-        }
-
-        .view-toggle:hover {
-            opacity: 1;
-        }
-
-        .view-toggle a {
-            text-decoration: none;
-            font-size: 0.875rem;
-            font-weight: 500;
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
             padding: 0.5rem 1rem;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.05);
             border-radius: 6px;
-            transition: var(--transition);
+            font-size: 0.875rem;
+            font-weight: 500;
             cursor: pointer;
+            transition: var(--transition);
+            color: inherit;
+            font-family: inherit;
         }
 
-        html[data-theme="dark"] .view-toggle a {
-            color: #888;
+        html[data-theme="light"] .header-btn {
+            border-color: rgba(0, 0, 0, 0.08);
         }
 
-        html[data-theme="dark"] .view-toggle a:hover {
-            color: #e0e0e0;
+        .header-btn:hover {
+            border-color: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        html[data-theme="light"] .header-btn:hover {
+            border-color: rgba(0, 0, 0, 0.15);
+            background: rgba(0, 0, 0, 0.02);
+        }
+
+        .header-btn-icon-only {
+            padding: 0.5rem;
+        }
+
+        .header-btn i {
+            font-size: 0.875rem;
+        }
+
+        /* Zen Container */
+        .zen-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        /* Giant Uptime Display */
+        .zen-uptime {
+            position: relative;
+            margin-bottom: 3rem;
+        }
+
+        .zen-uptime-number {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: clamp(6rem, 15vw, 12rem);
+            font-weight: 600;
+            letter-spacing: -0.03em;
+            line-height: 1;
+            background: linear-gradient(135deg, #48c78e 0%, #667eea 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-align: center;
+        }
+
+        .zen-uptime-label {
+            text-align: center;
+            font-size: 1.125rem;
+            font-weight: 500;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            opacity: 0.5;
+            margin-top: 1rem;
+        }
+
+        /* Zen Stats */
+        .zen-stats {
+            display: flex;
+            gap: 4rem;
+            margin-top: 2rem;
+        }
+
+        .zen-stat {
+            text-align: center;
+        }
+
+        .zen-stat-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2.5rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            line-height: 1;
+        }
+
+        .zen-stat-label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            opacity: 0.5;
+            margin-top: 0.75rem;
+        }
+
+        /* Zen Message */
+        .zen-message {
+            text-align: center;
+            font-size: 1rem;
+            opacity: 0.6;
+            margin-top: 3rem;
+            max-width: 600px;
+        }
+
+        /* Zen Link */
+        .zen-link {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            padding: 0.75rem 1.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-decoration: none;
+            color: inherit;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .zen-link:hover {
             background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.1);
         }
 
-        html[data-theme="light"] .view-toggle a {
-            color: #666;
+        html[data-theme="light"] .zen-link {
+            background: rgba(0, 0, 0, 0.02);
+            border-color: rgba(0, 0, 0, 0.08);
         }
 
-        html[data-theme="light"] .view-toggle a:hover {
-            color: #111;
+        html[data-theme="light"] .zen-link:hover {
             background: rgba(0, 0, 0, 0.05);
+            border-color: rgba(0, 0, 0, 0.15);
         }
 
         /* Responsive */
         @media (max-width: 768px) {
-            .main-container {
-                padding: 2rem 1rem;
-                min-height: calc(100vh - 80px);
-            }
-
             .header-content {
-                padding: 1rem;
+                padding: 0.75rem 1rem;
             }
 
-            .micro-stats {
-                grid-template-columns: 1fr;
-                gap: 0.75rem;
-                margin-bottom: 2rem;
+            .header-btn span {
+                display: none;
             }
 
-            .heatmap-grid {
-                gap: 2px;
+            .header-btn {
+                padding: 0.5rem;
             }
 
-            .heatmap-card {
-                padding: 1.5rem;
+            .zen-uptime-number {
+                font-size: clamp(4rem, 20vw, 8rem);
             }
-        }
 
-        /* Loading State */
-        .loading {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 200px;
-            opacity: 0.5;
-        }
+            .zen-stats {
+                gap: 2rem;
+            }
 
-        .loading i {
-            font-size: 2rem;
+            .zen-stat-value {
+                font-size: 2rem;
+            }
+
+            .zen-link {
+                bottom: 1rem;
+                right: 1rem;
+                font-size: 0.8125rem;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- Header -->
+    <!-- Header (matches main dashboard) -->
     <header class="top-header">
         <div class="header-content">
             <h1 class="header-title">
-                <span><i class="fas fa-shield-halved"></i></span>
-                <span>Hall Monitor</span>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 60" width="120" height="60">
+                    <path d="M12,30 L12,12 L24,12 L24,48 L12,48 L12,30 Z M36,30 L36,12 L48,12 L48,48 L36,48 L36,30 Z M60,30 L60,12 L72,12 L72,48 L60,48 L60,30 Z M84,30 L84,12 L96,12 L96,48 L84,48 L84,30 Z"
+                          fill="url(#headerPulseGradient)" opacity="0.2"/>
+                    <line x1="12" y1="30" x2="24" y2="30" stroke="#48c78e" stroke-width="2.5" stroke-linecap="round"/>
+                    <line x1="36" y1="30" x2="48" y2="30" stroke="#48c78e" stroke-width="2.5" stroke-linecap="round"/>
+                    <line x1="60" y1="30" x2="72" y2="30" stroke="#48c78e" stroke-width="2.5" stroke-linecap="round"/>
+                    <line x1="84" y1="30" x2="96" y2="30" stroke="#48c78e" stroke-width="2.5" stroke-linecap="round"/>
+
+                    <circle cx="108" cy="30" r="5" fill="#48c78e" opacity="0.8">
+                        <animate attributeName="opacity"
+                                 values="0.3;1;0.3"
+                                 dur="2s"
+                                 repeatCount="indefinite"
+                                 calcMode="spline"
+                                 keySplines="0.4 0 0.6 1; 0.4 0 0.6 1"/>
+                    </circle>
+
+                    <defs>
+                        <linearGradient id="headerPulseGradient" x1="12" y1="60" x2="108" y2="60" gradientUnits="userSpaceOnUse">
+                            <stop offset="0%" stop-color="#667eea"/>
+                            <stop offset="70%" stop-color="#48c78e"/>
+                            <stop offset="100%" stop-color="#48c78e"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <span class="header-title-text">Hall Monitor</span>
             </h1>
             <div class="header-actions" x-data="themeManager()">
                 <button class="header-btn header-btn-icon-only" @click="toggle()" title="Toggle theme">
                     <i class="fas fa-circle-half-stroke"></i>
                 </button>
-                <button class="header-btn" onclick="refreshData()">
+                <button class="header-btn"
+                        hx-get="/api/v1/monitors"
+                        hx-trigger="click"
+                        hx-swap="none"
+                        hx-on::after-request="htmxRefreshHandler(event)">
                     <i class="fas fa-sync"></i>
                     <span>Refresh</span>
-                </button>
-                <button class="header-btn" onclick="exportToGrafana()">
-                    <i class="fas fa-download"></i>
-                    <span>Export</span>
                 </button>
             </div>
         </div>
     </header>
 
-    <div class="main-container">
-        <div class="ambient-hero">
-            <div class="ambient-hero-title">HALL MONITOR</div>
-            <div class="ambient-hero-uptime" id="ambient-hero-uptime">--%</div>
-            <div class="ambient-hero-message" id="ambient-hero-message">Listening for the next change...</div>
+    <!-- Zen Container -->
+    <div class="zen-container"
+         hx-get="/api/v1/monitors"
+         hx-trigger="every 30s"
+         hx-swap="none"
+         hx-on::after-request="htmxRefreshHandler(event)">
+
+        <!-- Giant Uptime -->
+        <div class="zen-uptime">
+            <div class="zen-uptime-number" id="zen-uptime">--</div>
+            <div class="zen-uptime-label">Uptime</div>
         </div>
 
-        <!-- Micro Stats -->
-        <div class="micro-stats">
-            <div class="micro-stat">
-                <div class="micro-stat-value" id="uptime-value" style="color: #48c78e;">
-                    --<span style="font-size: 1rem; opacity: 0.5;">%</span>
-                </div>
-                <div class="micro-stat-label">Uptime</div>
+        <!-- Minimal Stats -->
+        <div class="zen-stats">
+            <div class="zen-stat">
+                <div class="zen-stat-value" id="zen-monitors" style="color: #667eea;">--</div>
+                <div class="zen-stat-label">Monitors</div>
             </div>
-            <div class="micro-stat">
-                <div class="micro-stat-value" id="response-value" style="color: #667eea;">
-                    --<span style="font-size: 1rem; opacity: 0.5;">ms</span>
-                </div>
-                <div class="micro-stat-label">Response</div>
-            </div>
-            <div class="micro-stat">
-                <div class="micro-stat-value" id="incidents-value" style="color: #48c78e;">
-                    --
-                </div>
-                <div class="micro-stat-label">Incidents</div>
+            <div class="zen-stat">
+                <div class="zen-stat-value" id="zen-incidents" style="color: #48c78e;">0</div>
+                <div class="zen-stat-label">Incidents</div>
             </div>
         </div>
 
-        <div class="ambient-stack" id="ambientMonitorStack">
-            <div class="ambient-stack-placeholder">
-                <i class="fas fa-spinner fa-pulse"></i>
-            </div>
-        </div>
-
-        <!-- Uptime Heatmap -->
-        <div class="heatmap-card">
-            <div class="heatmap-header">
-                <div>
-                    <div class="heatmap-title">Uptime History</div>
-                    <p style="font-size: 0.75rem; opacity: 0.5; margin-top: 0.25rem;">
-                        Green intensity = Uptime quality • Dark gray = Past no data • Light blue = Future
-                    </p>
-                </div>
-                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.75rem;">
-                    <div class="time-range-toggle">
-                        <button class="time-range-btn" onclick="setTimeRange(1)">1d</button>
-                        <button class="time-range-btn" onclick="setTimeRange(7)">7d</button>
-                        <button class="time-range-btn active" onclick="setTimeRange(30)">30d</button>
-                    </div>
-                    <div class="heatmap-legend">
-                        <span style="opacity: 0.6;">Dim</span>
-                        <span class="legend-box level-1" title="<50% uptime"></span>
-                        <span class="legend-box level-2" title="50-80% uptime"></span>
-                        <span class="legend-box level-3" title="80-90% uptime"></span>
-                        <span class="legend-box level-4" title="90-98% uptime"></span>
-                        <span class="legend-box level-5" title="98-100% uptime"></span>
-                        <span style="opacity: 0.6;">Bright</span>
-                    </div>
-                </div>
-            </div>
-            <div class="heatmap-grid" id="heatmap-grid">
-                <div class="loading">
-                    <i class="fas fa-spinner fa-pulse"></i>
-                </div>
-            </div>
-        </div>
-
-        <div class="ambient-ticker" id="ambientTicker">
-            All systems calm.
-        </div>
-
-        <!-- View Toggle -->
-        <div class="view-toggle">
-            <a href="#" onclick="switchToMetricView(); return false;">
-                <i class="fas fa-chart-line"></i>
-                <span>Switch to Metric View</span>
-                <i class="fas fa-arrow-right" style="font-size: 0.75rem;"></i>
-            </a>
+        <!-- Zen Message -->
+        <div class="zen-message" id="zen-message">
+            All systems operational
         </div>
     </div>
 
+    <!-- Link to Full Dashboard -->
+    <a href="/dashboard" class="zen-link">
+        <i class="fas fa-chart-line"></i>
+        <span>Full Dashboard</span>
+    </a>
+
     <script>
+        // Version check
+        console.log('Ambient Dashboard JS loaded - zen mode');
+
         // Alpine.js theme manager
         function themeManager() {
             return {
@@ -739,100 +396,16 @@
 
         const API_ENDPOINT = '/api/v1';
         let monitorsData = null;
-        let uptimeHistory = null;
-        let currentTimeRange = 30; // Default to 30 days for ambient view
 
-        function escapeHtml(value) {
-            if (typeof value !== 'string') return value;
-            return value
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;');
-        }
-
-        // Check if we should redirect to preferred view
-        function checkViewPreference() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const viewParam = urlParams.get('view');
-            
-            // Only auto-redirect if no explicit view parameter in URL
-            if (!viewParam) {
-                const preferredView = localStorage.getItem('hallmonitor_preferredView');
-                const currentView = document.documentElement.getAttribute('data-view');
-                
-                // If user has a preference and it's different from current view, redirect
-                if (preferredView && preferredView !== currentView) {
-                    window.location.href = `/dashboard?view=${preferredView}`;
-                    return false; // Don't continue initialization
-                }
+        // htmx refresh handler
+        function htmxRefreshHandler(event) {
+            try {
+                const data = JSON.parse(event.detail.xhr.responseText);
+                monitorsData = data;
+                updateZenUI(data);
+            } catch (error) {
+                console.error('htmx refresh failed:', error);
             }
-            return true; // Continue initialization
-        }
-
-        // Initialize settings from localStorage
-        function initSettings() {
-            // Check if we should redirect to preferred view
-            if (!checkViewPreference()) {
-                return; // Don't initialize if we're redirecting
-            }
-            
-            // Restore time range preference for ambient view
-            const savedTimeRange = localStorage.getItem('hallmonitor_timeRange_ambient');
-            if (savedTimeRange) {
-                currentTimeRange = parseInt(savedTimeRange, 10);
-            }
-            
-            // Update button active state
-            updateTimeRangeButtons();
-        }
-
-        function updateTimeRangeButtons() {
-            document.querySelectorAll('.time-range-btn').forEach(btn => {
-                btn.classList.remove('active');
-                // Check if this button matches current time range
-                const btnOnClick = btn.getAttribute('onclick');
-                const match = btnOnClick.match(/setTimeRange\((\d+)\)/);
-                if (match && parseInt(match[1], 10) === currentTimeRange) {
-                    btn.classList.add('active');
-                }
-            });
-        }
-
-        // Resize handler for heatmap recalculation
-        let resizeTimeout;
-        function handleResize() {
-            clearTimeout(resizeTimeout);
-            resizeTimeout = setTimeout(() => {
-                if (uptimeHistory !== null) {
-                    generateHeatmap(uptimeHistory);
-                }
-            }, 250); // Debounce resize events
-        }
-
-        // Initialize on load
-        document.addEventListener('DOMContentLoaded', async () => {
-            initSettings();
-            await loadData();
-            await loadUptimeHistory();
-            setInterval(async () => {
-                await loadData();
-                await loadUptimeHistory();
-            }, 30000); // Refresh every 30s
-            
-            // Add resize listener for responsive heatmap
-            window.addEventListener('resize', handleResize);
-        });
-
-        function setTimeRange(days) {
-            currentTimeRange = days;
-            // Save to localStorage
-            localStorage.setItem('hallmonitor_timeRange_ambient', days.toString());
-            // Update button states
-            updateTimeRangeButtons();
-            // Regenerate heatmap
-            generateHeatmap(uptimeHistory);
         }
 
         async function loadData() {
@@ -840,404 +413,67 @@
                 const response = await fetch(`${API_ENDPOINT}/monitors`);
                 const data = await response.json();
                 monitorsData = data;
-                updateUI(data);
+                updateZenUI(data);
             } catch (error) {
                 console.error('Failed to load data:', error);
-                // Show error in stats
-                document.getElementById('uptime-value').innerHTML = 
-                    `--<span style="font-size: 1rem; opacity: 0.5;">%</span>`;
-                document.getElementById('response-value').innerHTML = 
-                    `--<span style="font-size: 1rem; opacity: 0.5;">ms</span>`;
-                document.getElementById('incidents-value').textContent = '--';
             }
         }
 
-        async function loadUptimeHistory() {
-            try {
-                // Fetch historical data from new history API
-                const monitors = monitorsData?.monitors || [];
-                if (monitors.length === 0) {
-                    generateHeatmap(null);
-                    return;
-                }
-
-                // Get history for the first monitor as a sample (can be extended to all monitors)
-                const monitorName = monitors[0]?.name;
-                if (!monitorName) {
-                    generateHeatmap(null);
-                    return;
-                }
-
-                // Fetch last 90 days of history for ambient view
-                const end = new Date();
-                const start = new Date();
-                start.setDate(start.getDate() - 90);
-
-                const response = await fetch(
-                    `${API_ENDPOINT}/monitors/${encodeURIComponent(monitorName)}/history?` +
-                    `start=${start.toISOString()}&end=${end.toISOString()}&limit=10000`
-                );
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error ${response.status}`);
-                }
-
-                const data = await response.json();
-                uptimeHistory = parseHistoricalResults(data.results || []);
-                generateHeatmap(uptimeHistory);
-            } catch (error) {
-                console.error('Failed to load uptime history:', error);
-                // Fall back to simulated data for demo
-                generateHeatmap(null);
-            }
-        }
-
-        function parseHistoricalResults(results) {
-            // Convert historical results into daily uptime data
-            const uptimeData = {};
-            
-            for (const result of results) {
-                const date = result.timestamp.split('T')[0];
-                if (!uptimeData[date]) {
-                    uptimeData[date] = { up: 0, down: 0, total: 0 };
-                }
-                
-                uptimeData[date].total++;
-                if (result.status === 'up') {
-                    uptimeData[date].up++;
-                } else {
-                    uptimeData[date].down++;
-                }
-            }
-            
-            // Convert to array of uptime values (0-1 range)
-            const dailyUptimes = {};
-            for (const [date, stats] of Object.entries(uptimeData)) {
-                dailyUptimes[date] = stats.total > 0 ? stats.up / stats.total : 1.0;
-            }
-            
-            return dailyUptimes;
-        }
-
-        async function loadUptimeStats() {
-            try {
-                // Load uptime statistics for different periods
-                const monitors = monitorsData?.monitors || [];
-                if (monitors.length === 0) return;
-
-                const monitorName = monitors[0]?.name;
-                if (!monitorName) return;
-
-                // Load 24h, 7d, and 30d uptime stats in parallel
-                const [uptime24h, uptime7d, uptime30d] = await Promise.all([
-                    fetch(`${API_ENDPOINT}/monitors/${encodeURIComponent(monitorName)}/uptime?period=24h`)
-                        .then(r => r.ok ? r.json() : null),
-                    fetch(`${API_ENDPOINT}/monitors/${encodeURIComponent(monitorName)}/uptime?period=168h`)
-                        .then(r => r.ok ? r.json() : null),
-                    fetch(`${API_ENDPOINT}/monitors/${encodeURIComponent(monitorName)}/uptime?period=720h`)
-                        .then(r => r.ok ? r.json() : null)
-                ]);
-
-                // Store in global variable for use in UI
-                window.uptimeStats = {
-                    '24h': uptime24h,
-                    '7d': uptime7d,
-                    '30d': uptime30d
-                };
-
-                console.log('Uptime stats loaded:', window.uptimeStats);
-            } catch (error) {
-                console.error('Failed to load uptime stats:', error);
-            }
-        }
-
-        async function refreshData() {
-            await loadData();
-            await loadUptimeHistory();
-            await loadUptimeStats();
-        }
-
-        function exportToGrafana() {
-            window.open('/api/v1/grafana/dashboard', '_blank');
-        }
-
-        function parseDuration(durationStr) {
-            if (!durationStr) return 0;
-            const match = durationStr.match(/([\d.]+)(ms|s|µs)/);
-            if (!match) return 0;
-            const value = parseFloat(match[1]);
-            const unit = match[2];
-            if (unit === 's') return value * 1000;
-            if (unit === 'µs') return value / 1000;
-            return value;
-        }
-
-        function renderAmbientStack(monitors) {
-            const stack = document.getElementById('ambientMonitorStack');
-            if (!stack) return;
-
-            if (!monitors || monitors.length === 0) {
-                stack.innerHTML = '<div class="ambient-stack-placeholder">No monitors configured yet.</div>';
-                return;
-            }
-
-            const top = monitors.slice(0, 5).map(monitor => {
-                const name = escapeHtml(monitor.name);
-                const meta = escapeHtml(monitor.group || monitor.type || 'monitor');
-                const status = monitor.status || 'unknown';
-                const uptime = monitor.last_check || '--';
-                return `
-                    <div class="ambient-stack-card">
-                        <span class="stack-dot ${status}"></span>
-                        <span class="stack-meta">
-                            <strong>${name}</strong>
-                            <span>${meta}</span>
-                        </span>
-                        <span class="stack-uptime">${uptime ? uptime.split('T')[0] : '--'}</span>
-                    </div>
-                `;
-            }).join('');
-
-            stack.innerHTML = top;
-        }
-
-        function updateUI(data) {
+        function updateZenUI(data) {
             const monitors = data.monitors || [];
             const total = monitors.length;
             const down = monitors.filter(m => m.status !== 'up').length;
             const uptime = total > 0 ? ((total - down) / total * 100) : 100;
 
-            // Calculate average response time
-            const responseTimes = monitors
-                .map(m => parseDuration(m.duration))
-                .filter(t => t > 0);
-            const avgResponse = responseTimes.length > 0 
-                ? (responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length)
-                : 0;
+            // Update giant uptime
+            const zenUptimeEl = document.getElementById('zen-uptime');
+            if (zenUptimeEl) {
+                zenUptimeEl.textContent = uptime.toFixed(2) + '%';
 
-            // Update hero + micro stats
-            const heroUptime = document.getElementById('ambient-hero-uptime');
-            const heroMessage = document.getElementById('ambient-hero-message');
-            if (heroUptime) heroUptime.textContent = `${uptime.toFixed(2)}%`;
-            if (heroMessage) {
-                heroMessage.textContent = down === 0
-                    ? 'Everything is steady.'
-                    : `${down} service${down > 1 ? 's' : ''} needs attention.`;
-            }
-
-            document.getElementById('uptime-value').innerHTML = 
-                `${uptime.toFixed(2)}<span style="font-size: 1rem; opacity: 0.5;">%</span>`;
-            document.getElementById('response-value').innerHTML = 
-                `${avgResponse.toFixed(0)}<span style="font-size: 1rem; opacity: 0.5;">ms</span>`;
-            document.getElementById('incidents-value').textContent = down;
-
-            // Update colors
-            const uptimeEl = document.getElementById('uptime-value');
-            const incidentsEl = document.getElementById('incidents-value');
-            
-            if (uptime >= 99.9) {
-                uptimeEl.style.color = '#48c78e';
-            } else if (uptime >= 99) {
-                uptimeEl.style.color = '#ffdd57';
-            } else {
-                uptimeEl.style.color = '#f14668';
-            }
-
-            incidentsEl.style.color = down === 0 ? '#48c78e' : '#f14668';
-
-            const ticker = document.getElementById('ambientTicker');
-            if (ticker) {
-                ticker.textContent = down === 0
-                    ? 'All systems calm. Last refresh ' + new Date().toLocaleTimeString()
-                    : `Attention: ${down} monitor${down > 1 ? 's are' : ' is'} degraded.`;
-            }
-
-            renderAmbientStack(monitors);
-        }
-
-        function calculateUptimeLevel(uptimeValue) {
-            // Convert 0-1 range to 1-5 levels with better thresholds
-            // Ambient view uses same logic but with calmer green-only gradient
-            if (uptimeValue < 0.5) return 1;      // <50% - Very dim
-            if (uptimeValue < 0.8) return 2;      // 50-80% - Dim
-            if (uptimeValue < 0.9) return 3;      // 80-90% - Medium
-            if (uptimeValue < 0.98) return 4;     // 90-98% - Bright
-            return 5;                              // 98-100% - Brightest
-        }
-
-        function calculateOptimalGridLayout(days, containerWidth, containerHeight) {
-            const gap = 3;
-            
-            // Try different column counts to find the best fit
-            // We want to maximize tile size while keeping them square
-            let bestColumns = 7;
-            let bestTileSize = 0;
-            
-            // Try column counts from 5 to 30
-            for (let cols = 5; cols <= Math.min(30, days); cols++) {
-                const rows = Math.ceil(days / cols);
-                
-                // Calculate tile size based on width
-                const availableWidth = containerWidth - (gap * (cols - 1));
-                const tileWidth = availableWidth / cols;
-                
-                // Calculate tile size based on height
-                const availableHeight = containerHeight - (gap * (rows - 1));
-                const tileHeight = availableHeight / rows;
-                
-                // Use the smaller dimension to keep square
-                const tileSize = Math.min(tileWidth, tileHeight);
-                
-                // Prefer layouts that maximize tile size
-                if (tileSize > bestTileSize && tileSize >= 8) { // Minimum 8px tiles
-                    bestTileSize = tileSize;
-                    bestColumns = cols;
-                }
-            }
-            
-            const rows = Math.ceil(days / bestColumns);
-            
-            return { columns: bestColumns, rows };
-        }
-
-        function generateHeatmap(historyData) {
-            const grid = document.getElementById('heatmap-grid');
-            if (!grid) return;
-            
-            // Use requestAnimationFrame to ensure container is sized
-            requestAnimationFrame(() => {
-                grid.innerHTML = '';
-                
-                const today = new Date();
-                today.setHours(23, 59, 59, 999); // Set to end of today for proper comparison
-                const todayStr = today.toISOString().split('T')[0];
-                
-                // Special handling for 1 day view - show hourly intervals
-                if (currentTimeRange === 1) {
-                    const hours = 24;
-                    // Calculate optimal layout for hourly view
-                    const card = grid.closest('.heatmap-card');
-                    const cardWidth = card ? card.clientWidth : 800;
-                    const cardHeight = card ? card.clientHeight : 380;
-                    const headerHeight = 100; // Approximate header + margin height
-                    const padding = 64; // 2rem * 2
-                    const availableWidth = Math.max(200, cardWidth - padding);
-                    const availableHeight = Math.max(150, cardHeight - headerHeight - 40); // 40px for padding
-                    const { columns, rows } = calculateOptimalGridLayout(hours, availableWidth, availableHeight);
-                    
-                    grid.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
-                    grid.style.gridAutoRows = 'auto'; // Let rows size naturally based on aspect-ratio
-                    
-                    for (let i = 0; i < hours; i++) {
-                        const cell = document.createElement('div');
-                        
-                        const hourStart = new Date(today);
-                        hourStart.setHours(0, 0, 0, 0);
-                        hourStart.setHours(i);
-                        
-                        const hourEnd = new Date(hourStart);
-                        hourEnd.setHours(i + 1);
-                        
-                        const now = new Date();
-                        const isFuture = hourStart > now;
-                        
-                        let tooltipText;
-                        
-                        if (isFuture) {
-                            // Future hours
-                            cell.className = 'heatmap-cell level-future';
-                            tooltipText = `${hourStart.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})} - Not yet reached`;
-                        } else if (monitorsData) {
-                        // Use current monitor status (in real impl, would fetch hourly data)
-                        const monitors = monitorsData.monitors || [];
-                        const total = monitors.length;
-                        const up = monitors.filter(m => m.status === 'up').length;
-                        const uptimeValue = total > 0 ? (up / total) : 1.0;
-                        const level = calculateUptimeLevel(uptimeValue);
-                        const uptimePercent = (uptimeValue * 100).toFixed(1);
-                        cell.className = `heatmap-cell level-${level}`;
-                        tooltipText = `${hourStart.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})} - ${hourEnd.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}: ${uptimePercent}% uptime`;
-                        } else {
-                            // Past hour with no data
-                            cell.className = 'heatmap-cell level-past-nodata';
-                            tooltipText = `${hourStart.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})} - No data`;
-                        }
-                        
-                        cell.title = tooltipText;
-                        grid.appendChild(cell);
-                    }
-                    return;
-                }
-                
-                // Handle 7 and 30 day views
-                const days = currentTimeRange;
-                
-                // Calculate optimal grid layout based on container dimensions
-                const card = grid.closest('.heatmap-card');
-                const cardWidth = card ? card.clientWidth : 800;
-                const cardHeight = card ? card.clientHeight : 380;
-                const headerHeight = 100; // Approximate header + margin height
-                const padding = 64; // 2rem * 2 (left + right)
-                const availableWidth = Math.max(200, cardWidth - padding);
-                const availableHeight = Math.max(150, cardHeight - headerHeight - 40); // 40px for padding
-                const { columns, rows } = calculateOptimalGridLayout(days, availableWidth, availableHeight);
-                
-                // Set grid layout to fill container
-                grid.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
-                grid.style.gridAutoRows = 'auto'; // Let rows size naturally based on aspect-ratio
-                
-                for (let i = 0; i < days; i++) {
-                    const cell = document.createElement('div');
-                    
-                    const date = new Date(today);
-                    date.setDate(date.getDate() - (days - 1 - i));
-                    date.setHours(0, 0, 0, 0); // Set to start of day for comparison
-                    const dateStr = date.toISOString().split('T')[0];
-                    
-                    // Determine state: past-no-data, future, or has-data
-                    const isFuture = date > today;
-                    const hasHistoricalData = historyData && historyData[dateStr] !== undefined;
-                    const isToday = dateStr === todayStr;
-                    
-                    let tooltipText;
-                    
-                    if (isFuture) {
-                        // Future date - not yet occurred
-                        cell.className = 'heatmap-cell level-future';
-                        tooltipText = `${date.toLocaleDateString()}: Not yet occurred`;
-                    } else if (hasHistoricalData) {
-                    // Has actual historical data from BadgerDB
-                    const uptimeValue = historyData[dateStr]; // 0-1 range
-                    const level = calculateUptimeLevel(uptimeValue);
-                    const uptimePercent = (uptimeValue * 100).toFixed(1);
-                    cell.className = `heatmap-cell level-${level}`;
-                    tooltipText = `${date.toLocaleDateString()}: ${uptimePercent}% uptime`;
-                } else if (isToday && monitorsData) {
-                    // Current day - use live monitor status
-                    const monitors = monitorsData.monitors || [];
-                    const total = monitors.length;
-                    const up = monitors.filter(m => m.status === 'up').length;
-                    const uptimeValue = total > 0 ? (up / total) : 1.0;
-                    const level = calculateUptimeLevel(uptimeValue);
-                    const uptimePercent = (uptimeValue * 100).toFixed(1);
-                    cell.className = `heatmap-cell level-${level}`;
-                    tooltipText = `${date.toLocaleDateString()}: ${uptimePercent}% uptime (current)`;
+                // Update gradient color based on health
+                if (uptime >= 99.9) {
+                    zenUptimeEl.style.background = 'linear-gradient(135deg, #48c78e 0%, #667eea 100%)';
+                } else if (uptime >= 95) {
+                    zenUptimeEl.style.background = 'linear-gradient(135deg, #ffdd57 0%, #667eea 100%)';
                 } else {
-                    // Past date with no data - Hall Monitor wasn't running
-                    cell.className = 'heatmap-cell level-past-nodata';
-                    tooltipText = `${date.toLocaleDateString()}: No data (Hall Monitor not running)`;
-                    }
-                    
-                    cell.title = tooltipText;
-                    grid.appendChild(cell);
+                    zenUptimeEl.style.background = 'linear-gradient(135deg, #f14668 0%, #667eea 100%)';
                 }
-            });
+                zenUptimeEl.style.webkitBackgroundClip = 'text';
+                zenUptimeEl.style.webkitTextFillColor = 'transparent';
+                zenUptimeEl.style.backgroundClip = 'text';
+            }
+
+            // Update monitors count
+            const zenMonitorsEl = document.getElementById('zen-monitors');
+            if (zenMonitorsEl) {
+                zenMonitorsEl.textContent = total;
+            }
+
+            // Update incidents
+            const zenIncidentsEl = document.getElementById('zen-incidents');
+            if (zenIncidentsEl) {
+                zenIncidentsEl.textContent = down;
+                zenIncidentsEl.style.color = down === 0 ? '#48c78e' : '#f14668';
+            }
+
+            // Update message
+            const zenMessageEl = document.getElementById('zen-message');
+            if (zenMessageEl) {
+                if (down === 0) {
+                    zenMessageEl.textContent = 'All systems operational';
+                } else if (down === 1) {
+                    const troubled = monitors.find(m => m.status !== 'up');
+                    zenMessageEl.textContent = troubled ? `${troubled.name} is experiencing issues` : '1 monitor degraded';
+                } else {
+                    zenMessageEl.textContent = `${down} monitors require attention`;
+                }
+            }
         }
 
-        function switchToMetricView() {
-            localStorage.setItem('hallmonitor_preferredView', 'metric');
-            window.location.href = '/dashboard?view=metric';
-        }
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadData();
+        });
     </script>
 </body>
 </html>
