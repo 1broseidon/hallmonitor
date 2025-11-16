@@ -1,3 +1,5 @@
+// Package logging provides structured logging using zerolog with configurable
+// levels and output formats including JSON and console modes.
 package logging
 
 import (

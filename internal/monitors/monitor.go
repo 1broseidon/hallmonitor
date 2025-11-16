@@ -1,3 +1,5 @@
+// Package monitors provides implementations for health check monitors including
+// HTTP, DNS, TCP, and ICMP ping monitoring with configurable intervals and timeouts.
 package monitors
 
 import (

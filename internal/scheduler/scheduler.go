@@ -1,3 +1,5 @@
+// Package scheduler manages concurrent execution of health checks with configurable
+// intervals, result storage, and exponential backoff for failed monitors.
 package scheduler
 
 import (

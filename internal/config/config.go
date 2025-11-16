@@ -1,3 +1,5 @@
+// Package config handles application configuration loading, validation, and
+// management using Viper for YAML-based configuration files.
 package config
 
 import (

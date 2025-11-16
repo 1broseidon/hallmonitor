@@ -1,3 +1,5 @@
+// Package storage provides persistent storage for monitor results and historical
+// data using BadgerDB with aggregation and querying capabilities.
 package storage
 
 import (

@@ -1,3 +1,5 @@
+// Package metrics provides Prometheus-based metrics collection for monitor checks,
+// response times, status codes, and operational statistics.
 package metrics
 
 import (

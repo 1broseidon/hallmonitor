@@ -1,3 +1,5 @@
+// Hall Monitor server provides continuous health monitoring for HTTP, DNS, TCP,
+// and ICMP targets with a web dashboard, metrics, and persistent storage.
 package main
 
 import (

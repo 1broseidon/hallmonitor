@@ -1,3 +1,5 @@
+// Package models defines core data structures for monitors, configurations,
+// and results shared across the application.
 package models
 
 import (

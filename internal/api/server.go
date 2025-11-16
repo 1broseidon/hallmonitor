@@ -1,3 +1,5 @@
+// Package api provides the HTTP API server with dashboard views, monitor status
+// endpoints, and real-time metrics using Fiber framework.
 package api
 
 import (
