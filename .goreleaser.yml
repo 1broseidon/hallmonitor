@@ -1,0 +1,183 @@
+# GoReleaser configuration
+# https://goreleaser.com/customization/
+
+version: 2
+
+before:
+  hooks:
+    - go mod tidy
+    - go generate ./...
+
+builds:
+  - id: hallmonitor
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    main: ./cmd/server
+    binary: hallmonitor
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.buildDate={{.Date}}
+      - -X main.gitCommit={{.ShortCommit}}
+    flags:
+      - -trimpath
+
+archives:
+  - id: hallmonitor
+    format: tar.gz
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - README.md
+      - LICENSE
+      - config.example.yml
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+      - 'typo'
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: 'Bug fixes'
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: 'Performance improvements'
+      regexp: '^.*?perf(\([[:word:]]+\))??!?:.+$'
+      order: 2
+    - title: 'Refactors'
+      regexp: '^.*?refactor(\([[:word:]]+\))??!?:.+$'
+      order: 3
+    - title: Others
+      order: 999
+
+dockers:
+  # AMD64 image
+  - image_templates:
+      - "ghcr.io/1broseidon/hallmonitor:{{ .Version }}-amd64"
+      - "ghcr.io/1broseidon/hallmonitor:latest-amd64"
+    use: buildx
+    dockerfile: Dockerfile
+    build_flag_templates:
+      - "--platform=linux/amd64"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.source={{.GitURL}}"
+      - "--build-arg=VERSION={{.Version}}"
+      - "--build-arg=BUILD_DATE={{.Date}}"
+      - "--build-arg=VCS_REF={{.ShortCommit}}"
+    extra_files:
+      - config.example.yml
+
+  # ARM64 image
+  - image_templates:
+      - "ghcr.io/1broseidon/hallmonitor:{{ .Version }}-arm64"
+      - "ghcr.io/1broseidon/hallmonitor:latest-arm64"
+    use: buildx
+    goarch: arm64
+    dockerfile: Dockerfile
+    build_flag_templates:
+      - "--platform=linux/arm64"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.source={{.GitURL}}"
+      - "--build-arg=VERSION={{.Version}}"
+      - "--build-arg=BUILD_DATE={{.Date}}"
+      - "--build-arg=VCS_REF={{.ShortCommit}}"
+    extra_files:
+      - config.example.yml
+
+docker_manifests:
+  # Create multi-arch manifest with version tag
+  - name_template: "ghcr.io/1broseidon/hallmonitor:{{ .Version }}"
+    image_templates:
+      - "ghcr.io/1broseidon/hallmonitor:{{ .Version }}-amd64"
+      - "ghcr.io/1broseidon/hallmonitor:{{ .Version }}-arm64"
+
+  # Create multi-arch manifest with major.minor tag
+  - name_template: "ghcr.io/1broseidon/hallmonitor:{{ .Major }}.{{ .Minor }}"
+    image_templates:
+      - "ghcr.io/1broseidon/hallmonitor:{{ .Version }}-amd64"
+      - "ghcr.io/1broseidon/hallmonitor:{{ .Version }}-arm64"
+
+  # Create multi-arch manifest with major tag
+  - name_template: "ghcr.io/1broseidon/hallmonitor:{{ .Major }}"
+    image_templates:
+      - "ghcr.io/1broseidon/hallmonitor:{{ .Version }}-amd64"
+      - "ghcr.io/1broseidon/hallmonitor:{{ .Version }}-arm64"
+
+  # Create multi-arch manifest with latest tag
+  - name_template: "ghcr.io/1broseidon/hallmonitor:latest"
+    image_templates:
+      - "ghcr.io/1broseidon/hallmonitor:latest-amd64"
+      - "ghcr.io/1broseidon/hallmonitor:latest-arm64"
+
+release:
+  github:
+    owner: 1broseidon
+    name: hallmonitor
+  draft: false
+  prerelease: auto
+  mode: replace
+  header: |
+    ## Hall Monitor {{ .Tag }} ({{ .Date }})
+
+    **Full Changelog**: https://github.com/1broseidon/hallmonitor/compare/{{ .PreviousTag }}...{{ .Tag }}
+  footer: |
+    ## Docker Images
+
+    Multi-architecture images are available at:
+    ```bash
+    docker pull ghcr.io/1broseidon/hallmonitor:{{ .Version }}
+    docker pull ghcr.io/1broseidon/hallmonitor:latest
+    ```
+
+    Supports: `linux/amd64`, `linux/arm64`
+
+    ## Installation
+
+    ### Binary Download
+    Download the appropriate binary for your platform from the assets below.
+
+    ### Docker
+    ```bash
+    docker run -d -p 7878:7878 \
+      -v $(pwd)/config.yml:/app/config.yml \
+      ghcr.io/1broseidon/hallmonitor:{{ .Version }}
+    ```
+
+    ### Verify Checksums
+    ```bash
+    sha256sum -c checksums.txt
+    ```
