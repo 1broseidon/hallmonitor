@@ -1160,7 +1160,11 @@
                 <button class="header-btn header-btn-icon-only" @click="toggle()" title="Toggle theme">
                     <i class="fas fa-circle-half-stroke"></i>
                 </button>
-                <button class="header-btn" onclick="refreshData()">
+                <button class="header-btn"
+                        hx-get="/api/v1/monitors"
+                        hx-trigger="click"
+                        hx-swap="none"
+                        hx-on::after-request="htmxRefreshHandler(event)">
                     <i class="fas fa-sync"></i>
                     <span>Refresh</span>
                 </button>
@@ -1172,7 +1176,11 @@
         </div>
     </header>
 
-    <div class="main-container">
+    <div class="main-container"
+         hx-get="/api/v1/monitors"
+         hx-trigger="every 30s"
+         hx-swap="none"
+         hx-on::after-request="htmxRefreshHandler(event)">
         <section class="hero-shell">
             <div class="hero-metric">
                 <div class="hero-value" id="hero-ring">
@@ -1403,11 +1411,8 @@
             initSettings();
             await loadData();
             await loadUptimeHistory();
-            setInterval(async () => {
-                await loadData();
-                await loadUptimeHistory();
-            }, 30000); // Refresh every 30s
-            
+            // Note: Auto-refresh now handled by htmx (every 30s)
+
             // Add resize listener for responsive heatmap
             window.addEventListener('resize', handleResize);
         });
@@ -1529,6 +1534,17 @@
                 console.log('Uptime stats loaded:', window.uptimeStats);
             } catch (error) {
                 console.error('Failed to load uptime stats:', error);
+            }
+        }
+
+        // htmx refresh handler - called when htmx auto-refresh completes
+        function htmxRefreshHandler(event) {
+            try {
+                const data = JSON.parse(event.detail.xhr.responseText);
+                monitorsData = data;
+                updateUI(data);
+            } catch (error) {
+                console.error('htmx refresh failed:', error);
             }
         }
 
