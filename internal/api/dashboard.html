@@ -1289,7 +1289,7 @@
                             <th class="expand-cell"></th>
                         </tr>
                     </thead>
-                    <tbody id="tableBody">
+                    <tbody id="tableBody" x-data="{ expandedRow: null }">
                         <tr>
                             <td colspan="6">
                                 <div class="loading">
@@ -1661,27 +1661,6 @@
             renderTable();
         }
 
-        function toggleRow(rowElement) {
-            const detailRow = rowElement.nextElementSibling;
-            
-            // Close other expanded rows
-            document.querySelectorAll('.main-row.expanded').forEach(row => {
-                if (row !== rowElement) {
-                    row.classList.remove('expanded');
-                    const otherDetail = row.nextElementSibling;
-                    if (otherDetail && otherDetail.classList.contains('detail-row')) {
-                        otherDetail.classList.remove('active');
-                    }
-                }
-            });
-            
-            // Toggle current row
-            rowElement.classList.toggle('expanded');
-            if (detailRow && detailRow.classList.contains('detail-row')) {
-                detailRow.classList.toggle('active');
-            }
-        }
-
         function formatTimeAgo(timestamp) {
             if (!timestamp) return 'Never';
             const date = new Date(timestamp);
@@ -1787,8 +1766,11 @@
                 const tcpResult = monitor.tcp_result;
                 const dnsResult = monitor.dns_result;
                 
+                const monitorId = escapeHtml(monitor.name);
                 return `
-                    <tr class="main-row" onclick="toggleRow(this)">
+                    <tr class="main-row"
+                        :class="{ 'expanded': expandedRow === '${monitorId}' }"
+                        @click="expandedRow = expandedRow === '${monitorId}' ? null : '${monitorId}'">
                         <td>
                             <div class="monitor-name-cell">
                                 <span class="status-dot ${monitor.status}"></span>
@@ -1810,7 +1792,9 @@
                             </div>
                         </td>
                     </tr>
-                    <tr class="detail-row">
+                    <tr class="detail-row"
+                        x-show="expandedRow === '${monitorId}'"
+                        x-collapse>
                         <td colspan="6">
                             <div class="detail-content">
                                 ${renderDetailBlocks(monitor)}
