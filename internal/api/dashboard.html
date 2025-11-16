@@ -1156,8 +1156,8 @@
                 </svg>
                 <span class="header-title-text">Hall Monitor</span>
             </h1>
-            <div class="header-actions">
-                <button class="header-btn header-btn-icon-only" onclick="toggleTheme()" title="Toggle theme">
+            <div class="header-actions" x-data="themeManager()">
+                <button class="header-btn header-btn-icon-only" @click="toggle()" title="Toggle theme">
                     <i class="fas fa-circle-half-stroke"></i>
                 </button>
                 <button class="header-btn" onclick="refreshData()">
@@ -1317,18 +1317,27 @@
     </div>
 
     <script>
+        // Alpine.js theme manager
+        function themeManager() {
+            return {
+                init() {
+                    const savedTheme = localStorage.getItem('hallmonitor_theme') || 'dark';
+                    document.documentElement.dataset.theme = savedTheme;
+                },
+                toggle() {
+                    const html = document.documentElement;
+                    const newTheme = html.dataset.theme === 'dark' ? 'light' : 'dark';
+                    html.dataset.theme = newTheme;
+                    localStorage.setItem('hallmonitor_theme', newTheme);
+                }
+            };
+        }
+
         const API_ENDPOINT = '/api/v1';
         const SLA_THRESHOLD = 99.9;
         let monitorsData = null;
         let uptimeHistory = null;
         let currentTimeRange = 90; // Default to 90 days for metric view
-
-        // Initialize theme
-        function initTheme() {
-            const html = document.documentElement;
-            const savedTheme = localStorage.getItem('hallmonitor_theme') || 'dark';
-            html.dataset.theme = savedTheme;
-        }
 
         // Check if we should redirect to preferred view
         function checkViewPreference() {
@@ -1390,7 +1399,6 @@
         }
 
         // Initialize on load
-        initTheme();
         document.addEventListener('DOMContentLoaded', async () => {
             initSettings();
             await loadData();
@@ -1412,13 +1420,6 @@
             updateTimeRangeButtons();
             // Regenerate heatmap
             generateHeatmap(uptimeHistory);
-        }
-
-        function toggleTheme() {
-            const html = document.documentElement;
-            const newTheme = html.dataset.theme === 'dark' ? 'light' : 'dark';
-            html.dataset.theme = newTheme;
-            localStorage.setItem('hallmonitor_theme', newTheme);
         }
 
         async function loadData() {
