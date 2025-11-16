@@ -320,7 +320,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Acknowledgments
 
-- Built with [Echo](https://echo.labstack.com/) web framework
+- Built with [Fiber](https://gofiber.io/) web framework
 - Configuration management by [Viper](https://github.com/spf13/viper)
 - Metrics powered by [Prometheus](https://prometheus.io/)
 

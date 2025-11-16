@@ -74,7 +74,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Configurable check intervals and timeouts
 - Prometheus metrics export
 - Built-in web dashboard
-- Grafana JSON API compatibility
+- Grafana JSON API endpoints (placeholder implementation for future development)
 - Docker support with multi-architecture builds (amd64, arm64)
 - Comprehensive documentation
 - GitHub Actions CI/CD workflows
