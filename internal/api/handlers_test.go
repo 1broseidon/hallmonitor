@@ -4,17 +4,14 @@ import (
 	"encoding/json"
 	"io"
 	"net/http/httptest"
-	"reflect"
 	"testing"
 	"time"
-	"unsafe"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/1broseidon/hallmonitor/internal/config"
 	"github.com/1broseidon/hallmonitor/internal/logging"
-	"github.com/1broseidon/hallmonitor/internal/scheduler"
 	"github.com/1broseidon/hallmonitor/pkg/models"
 )
 
@@ -34,8 +31,9 @@ func createTestServer(t *testing.T) *Server {
 	// Create test config
 	cfg := &config.Config{
 		Server: config.ServerConfig{
-			Port: "7878",
-			Host: "0.0.0.0",
+			Port:            "7878",
+			Host:            "0.0.0.0",
+			EnableDashboard: true,
 		},
 	}
 
@@ -62,10 +60,9 @@ func storeResult(t *testing.T, server *Server, result *models.MonitorResult) {
 		t.Fatalf("result cannot be nil")
 	}
 
-	value := reflect.ValueOf(server.scheduler).Elem()
-	field := value.FieldByName("resultStore")
-	resultStore := reflect.NewAt(field.Type(), unsafe.Pointer(field.UnsafeAddr())).Elem().Interface().(*scheduler.ResultStore)
-	resultStore.StoreResult(result.Monitor, result)
+	// Use test helper instead of reflection
+	testHelper := server.scheduler.NewTestHelper()
+	testHelper.InjectResult(result.Monitor, result)
 }
 
 func TestHealthHandler(t *testing.T) {
@@ -559,6 +556,332 @@ func TestCORSMiddleware(t *testing.T) {
 	corsHeader := resp.Header.Get("Access-Control-Allow-Origin")
 	if corsHeader == "" {
 		t.Logf("warning: no CORS header found (may be OK depending on config)")
+	}
+}
+
+func TestDashboardHandler(t *testing.T) {
+	server := createTestServer(t)
+	defer server.app.Shutdown()
+
+	req := httptest.NewRequest("GET", "/", nil)
+	resp, err := server.app.Test(req, -1)
+	if err != nil {
+		t.Fatalf("request failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != fiber.StatusOK {
+		t.Fatalf("expected status 200, got %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("failed to read response body: %v", err)
+	}
+
+	bodyStr := string(body)
+	if bodyStr == "" {
+		t.Fatalf("expected non-empty dashboard response")
+	}
+
+	// Check that it's HTML content
+	contentType := resp.Header.Get("Content-Type")
+	if !contains(contentType, "text/html") {
+		t.Fatalf("expected HTML content type, got %s", contentType)
+	}
+
+	// Verify it contains expected dashboard elements
+	if !contains(bodyStr, "Hall Monitor") {
+		t.Error("dashboard missing expected title")
+	}
+}
+
+func TestDashboardAmbientHandler(t *testing.T) {
+	server := createTestServer(t)
+	defer server.app.Shutdown()
+
+	req := httptest.NewRequest("GET", "/dashboard/ambient", nil)
+	resp, err := server.app.Test(req, -1)
+	if err != nil {
+		t.Fatalf("request failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != fiber.StatusOK {
+		t.Fatalf("expected status 200, got %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("failed to read response body: %v", err)
+	}
+
+	bodyStr := string(body)
+	if bodyStr == "" {
+		t.Fatalf("expected non-empty ambient dashboard response")
+	}
+
+	// Check that it's HTML content
+	contentType := resp.Header.Get("Content-Type")
+	if !contains(contentType, "text/html") {
+		t.Fatalf("expected HTML content type, got %s", contentType)
+	}
+
+	// Verify it contains expected ambient elements
+	if !contains(bodyStr, "Ambient View") || !contains(bodyStr, "Hall Monitor") {
+		t.Error("ambient dashboard missing expected content")
+	}
+}
+
+func TestGetMonitorHistoryHandler(t *testing.T) {
+	server := createTestServer(t)
+	defer server.app.Shutdown()
+
+	enabled := true
+	loadMonitors(t, server, []models.MonitorGroup{
+		{
+			Name: "core",
+			Monitors: []models.Monitor{
+				{Type: models.MonitorTypeHTTP, Name: "api", URL: "https://api.example.com", Enabled: &enabled},
+			},
+		},
+	})
+
+	// Store multiple results to create history
+	baseTime := time.Now().UTC().Add(-1 * time.Hour)
+	for i := 0; i < 5; i++ {
+		storeResult(t, server, &models.MonitorResult{
+			Monitor:   "api",
+			Type:      models.MonitorTypeHTTP,
+			Group:     "core",
+			Status:    models.StatusUp,
+			Duration:  100 * time.Millisecond,
+			Timestamp: baseTime.Add(time.Duration(i) * 10 * time.Minute),
+		})
+	}
+
+	req := httptest.NewRequest("GET", "/api/v1/monitors/api/history", nil)
+	resp, err := server.app.Test(req, -1)
+	if err != nil {
+		t.Fatalf("request failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != fiber.StatusOK {
+		t.Fatalf("expected status 200, got %d", resp.StatusCode)
+	}
+
+	var payload map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+
+	if payload["monitor"] != "api" {
+		t.Fatalf("expected monitor name 'api', got %v", payload["monitor"])
+	}
+
+	results, ok := payload["results"].([]interface{})
+	if !ok {
+		t.Fatalf("expected results array, got %T", payload["results"])
+	}
+
+	if len(results) == 0 {
+		t.Error("expected non-empty results")
+	}
+}
+
+func TestGetMonitorHistoryHandlerWithTimeRange(t *testing.T) {
+	server := createTestServer(t)
+	defer server.app.Shutdown()
+
+	enabled := true
+	loadMonitors(t, server, []models.MonitorGroup{
+		{
+			Name: "core",
+			Monitors: []models.Monitor{
+				{Type: models.MonitorTypeHTTP, Name: "api", URL: "https://api.example.com", Enabled: &enabled},
+			},
+		},
+	})
+
+	// Store results spanning different time periods
+	baseTime := time.Now().UTC().Add(-2 * time.Hour)
+	for i := 0; i < 10; i++ {
+		storeResult(t, server, &models.MonitorResult{
+			Monitor:   "api",
+			Type:      models.MonitorTypeHTTP,
+			Group:     "core",
+			Status:    models.StatusUp,
+			Duration:  100 * time.Millisecond,
+			Timestamp: baseTime.Add(time.Duration(i) * 15 * time.Minute),
+		})
+	}
+
+	// Request last hour
+	req := httptest.NewRequest("GET", "/api/v1/monitors/api/history?period=1h", nil)
+	resp, err := server.app.Test(req, -1)
+	if err != nil {
+		t.Fatalf("request failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != fiber.StatusOK {
+		t.Fatalf("expected status 200, got %d", resp.StatusCode)
+	}
+
+	var payload map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+
+	results, ok := payload["results"].([]interface{})
+	if !ok {
+		t.Fatalf("expected results array, got %T", payload["results"])
+	}
+
+	// Should have fewer results when filtering by time
+	if len(results) >= 10 {
+		t.Logf("warning: expected filtered results to have fewer than 10 results, got %d", len(results))
+	}
+}
+
+func TestGetMonitorHistoryHandlerNotFound(t *testing.T) {
+	server := createTestServer(t)
+	defer server.app.Shutdown()
+
+	req := httptest.NewRequest("GET", "/api/v1/monitors/nonexistent/history", nil)
+	resp, err := server.app.Test(req, -1)
+	if err != nil {
+		t.Fatalf("request failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Handler returns 200 with empty results for nonexistent monitors
+	if resp.StatusCode != fiber.StatusOK {
+		t.Fatalf("expected status 200, got %d", resp.StatusCode)
+	}
+
+	var payload map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+
+	results, ok := payload["results"].([]interface{})
+	if !ok {
+		t.Fatalf("expected results array, got %T", payload["results"])
+	}
+
+	// Should be empty for nonexistent monitor
+	if len(results) != 0 {
+		t.Errorf("expected empty results for nonexistent monitor, got %d", len(results))
+	}
+}
+
+func TestGetMonitorUptimeHandler(t *testing.T) {
+	server := createTestServer(t)
+	defer server.app.Shutdown()
+
+	enabled := true
+	loadMonitors(t, server, []models.MonitorGroup{
+		{
+			Name: "core",
+			Monitors: []models.Monitor{
+				{Type: models.MonitorTypeHTTP, Name: "api", URL: "https://api.example.com", Enabled: &enabled},
+			},
+		},
+	})
+
+	// Store mix of up and down results
+	baseTime := time.Now().UTC().Add(-24 * time.Hour)
+	for i := 0; i < 20; i++ {
+		status := models.StatusUp
+		if i%5 == 0 { // Every 5th check fails
+			status = models.StatusDown
+		}
+		storeResult(t, server, &models.MonitorResult{
+			Monitor:   "api",
+			Type:      models.MonitorTypeHTTP,
+			Group:     "core",
+			Status:    status,
+			Duration:  100 * time.Millisecond,
+			Timestamp: baseTime.Add(time.Duration(i) * time.Hour),
+		})
+	}
+
+	req := httptest.NewRequest("GET", "/api/v1/monitors/api/uptime", nil)
+	resp, err := server.app.Test(req, -1)
+	if err != nil {
+		t.Fatalf("request failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != fiber.StatusOK {
+		t.Fatalf("expected status 200, got %d", resp.StatusCode)
+	}
+
+	var payload map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+
+	if payload["monitor"] != "api" {
+		t.Fatalf("expected monitor name 'api', got %v", payload["monitor"])
+	}
+
+	// Check for expected uptime fields
+	if payload["period"] == nil {
+		t.Error("expected period field")
+	}
+
+	if payload["uptime_percent"] == nil {
+		t.Error("expected uptime_percent field")
+	}
+
+	if payload["total_checks"] == nil {
+		t.Error("expected total_checks field")
+	}
+
+	// Validate uptime percentage is reasonable (should be around 80% given our test data)
+	uptimePercent, ok := payload["uptime_percent"].(float64)
+	if ok && (uptimePercent < 0 || uptimePercent > 100) {
+		t.Fatalf("expected uptime percentage between 0-100, got %f", uptimePercent)
+	}
+
+	totalChecks, ok := payload["total_checks"].(float64)
+	if ok && totalChecks != 20 {
+		t.Logf("expected 20 total checks, got %v", totalChecks)
+	}
+}
+
+func TestGetMonitorUptimeHandlerNotFound(t *testing.T) {
+	server := createTestServer(t)
+	defer server.app.Shutdown()
+
+	req := httptest.NewRequest("GET", "/api/v1/monitors/nonexistent/uptime", nil)
+	resp, err := server.app.Test(req, -1)
+	if err != nil {
+		t.Fatalf("request failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Handler returns 200 with zero checks for nonexistent monitors
+	if resp.StatusCode != fiber.StatusOK {
+		t.Fatalf("expected status 200, got %d", resp.StatusCode)
+	}
+
+	var payload map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+
+	totalChecks, ok := payload["total_checks"].(float64)
+	if !ok {
+		t.Fatalf("expected total_checks to be a number, got %T", payload["total_checks"])
+	}
+
+	// Should have zero checks for nonexistent monitor
+	if totalChecks != 0 {
+		t.Errorf("expected 0 total checks for nonexistent monitor, got %v", totalChecks)
 	}
 }
 

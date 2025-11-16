@@ -162,3 +162,146 @@ func TestLoggerContextPropagation(t *testing.T) {
 		t.Fatalf("expected message 'check failed', got %v", got)
 	}
 }
+
+func TestLoggerMethodsDebugInfoWarn(t *testing.T) {
+	var buf bytes.Buffer
+	logger := &Logger{logger: zerolog.New(&buf).Level(zerolog.DebugLevel)}
+
+	logger.Debug("debug message")
+	logger.Info("info message")
+	logger.Warn("warn message")
+
+	output := buf.String()
+
+	if !strings.Contains(output, "debug message") {
+		t.Errorf("expected debug message in output")
+	}
+	if !strings.Contains(output, "info message") {
+		t.Errorf("expected info message in output")
+	}
+	if !strings.Contains(output, "warn message") {
+		t.Errorf("expected warn message in output")
+	}
+
+	// Verify log levels
+	lines := strings.Split(strings.TrimSpace(output), "\n")
+	if len(lines) != 3 {
+		t.Fatalf("expected 3 log lines, got %d", len(lines))
+	}
+
+	for i, line := range lines {
+		var entry map[string]interface{}
+		if err := json.Unmarshal([]byte(line), &entry); err != nil {
+			t.Fatalf("failed to decode log entry %d: %v", i, err)
+		}
+
+		level, ok := entry["level"].(string)
+		if !ok {
+			t.Fatalf("expected level to be string, got %T", entry["level"])
+		}
+
+		switch i {
+		case 0:
+			if level != "debug" {
+				t.Errorf("expected first log to be debug level, got %s", level)
+			}
+		case 1:
+			if level != "info" {
+				t.Errorf("expected second log to be info level, got %s", level)
+			}
+		case 2:
+			if level != "warn" {
+				t.Errorf("expected third log to be warn level, got %s", level)
+			}
+		}
+	}
+}
+
+func TestLoggerFormattedMethods(t *testing.T) {
+	var buf bytes.Buffer
+	logger := &Logger{logger: zerolog.New(&buf).Level(zerolog.DebugLevel)}
+
+	logger.Debugf("debug %s", "formatted")
+	logger.Infof("info %d", 123)
+	logger.Warnf("warn %v", true)
+	logger.Errorf("error %s %d", "test", 456)
+
+	output := buf.String()
+
+	if !strings.Contains(output, "debug formatted") {
+		t.Errorf("expected 'debug formatted' in output")
+	}
+	if !strings.Contains(output, "info 123") {
+		t.Errorf("expected 'info 123' in output")
+	}
+	if !strings.Contains(output, "warn true") {
+		t.Errorf("expected 'warn true' in output")
+	}
+	if !strings.Contains(output, "error test 456") {
+		t.Errorf("expected 'error test 456' in output")
+	}
+}
+
+func TestGetGlobalLogger(t *testing.T) {
+	// Initialize logger first
+	prevLevel := zerolog.GlobalLevel()
+	prevLogger := zerologlog.Logger
+	t.Cleanup(func() {
+		zerolog.SetGlobalLevel(prevLevel)
+		zerologlog.Logger = prevLogger
+	})
+
+	_, err := InitLogger(Config{
+		Level:  "info",
+		Format: "json",
+	})
+	if err != nil {
+		t.Fatalf("InitLogger failed: %v", err)
+	}
+
+	logger := GetGlobalLogger()
+	if logger == nil {
+		t.Fatal("expected GetGlobalLogger to return non-nil logger")
+	}
+
+	// Verify it's functional
+	var buf bytes.Buffer
+	logger.logger = zerolog.New(&buf)
+	logger.Info("test global logger")
+
+	output := buf.String()
+	if !strings.Contains(output, "test global logger") {
+		t.Errorf("expected global logger to log messages")
+	}
+}
+
+func TestLoggerWithFieldsVariants(t *testing.T) {
+	var buf bytes.Buffer
+	logger := &Logger{logger: zerolog.New(&buf)}
+
+	// Test WithFields with multiple types
+	enriched := logger.WithFields(map[string]interface{}{
+		"string_field": "value",
+		"int_field":    42,
+		"bool_field":   true,
+		"float_field":  3.14,
+	})
+
+	enriched.Info("fields test")
+
+	output := buf.String()
+	var entry map[string]interface{}
+	if err := json.Unmarshal([]byte(strings.TrimSpace(output)), &entry); err != nil {
+		t.Fatalf("failed to decode log entry: %v", err)
+	}
+
+	if entry["string_field"] != "value" {
+		t.Errorf("expected string_field to be 'value', got %v", entry["string_field"])
+	}
+	if entry["int_field"] != float64(42) {
+		t.Errorf("expected int_field to be 42, got %v", entry["int_field"])
+	}
+	if entry["bool_field"] != true {
+		t.Errorf("expected bool_field to be true, got %v", entry["bool_field"])
+	}
+}

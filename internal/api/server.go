@@ -1,7 +1,8 @@
 package api
 
 import (
-	_ "embed"
+	"embed"
+	"html/template"
 	"strings"
 	"time"
 
@@ -20,11 +21,40 @@ import (
 	"github.com/1broseidon/hallmonitor/pkg/models"
 )
 
-//go:embed dashboard.html
-var dashboardHTML string
+//go:embed templates/*.html templates/partials/*.html
+var templatesFS embed.FS
 
-//go:embed dashboard_ambient.html
-var dashboardAmbientHTML string
+var (
+	dashboardTpl *template.Template
+	ambientTpl   *template.Template
+)
+
+func init() {
+	var err error
+
+	// Parse dashboard template with partials
+	dashboardTpl, err = template.ParseFS(templatesFS,
+		"templates/dashboard.html",
+		"templates/partials/*.html",
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	// Parse ambient template with partials
+	ambientTpl, err = template.ParseFS(templatesFS,
+		"templates/ambient.html",
+		"templates/partials/*.html",
+	)
+	if err != nil {
+		panic(err)
+	}
+}
+
+// DashboardData holds data passed to dashboard templates
+type DashboardData struct {
+	IsAmbient bool
+}
 
 // Server represents the API server
 type Server struct {

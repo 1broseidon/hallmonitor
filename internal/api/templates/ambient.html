@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark" data-view="ambient">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -53,97 +53,7 @@
             color: #222;
         }
 
-        /* Header */
-        .top-header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 100;
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-        }
-
-        html[data-theme="dark"] .top-header {
-            background: rgba(10, 10, 10, 0.85);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        html[data-theme="light"] .top-header {
-            background: rgba(245, 245, 245, 0.85);
-            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-        }
-
-        .header-content {
-            max-width: 100%;
-            margin: 0 auto;
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .header-title {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            font-size: 1rem;
-            font-weight: 600;
-            letter-spacing: -0.02em;
-        }
-
-        .header-title svg {
-            width: 28px;
-            height: 28px;
-        }
-
-        .header-title-text {
-            font-size: 1rem;
-            font-weight: 600;
-        }
-
-        .header-actions {
-            display: flex;
-            gap: 0.75rem;
-        }
-
-        .header-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            background: transparent;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 6px;
-            font-size: 0.875rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: var(--transition);
-            color: inherit;
-            font-family: inherit;
-        }
-
-        html[data-theme="light"] .header-btn {
-            border-color: rgba(0, 0, 0, 0.08);
-        }
-
-        .header-btn:hover {
-            border-color: rgba(255, 255, 255, 0.1);
-            background: rgba(255, 255, 255, 0.02);
-        }
-
-        html[data-theme="light"] .header-btn:hover {
-            border-color: rgba(0, 0, 0, 0.15);
-            background: rgba(0, 0, 0, 0.02);
-        }
-
-        .header-btn-icon-only {
-            padding: 0.5rem;
-        }
-
-        .header-btn i {
-            font-size: 0.875rem;
-        }
+        {{template "header-styles" .}}
 
         /* Zen Container */
         .zen-container {
@@ -172,6 +82,24 @@
             -webkit-text-fill-color: transparent;
             background-clip: text;
             text-align: center;
+            position: relative;
+            --zen-glow: 72,199,142;
+        }
+
+        .zen-uptime-number::before {
+            content: '';
+            position: absolute;
+            inset: -40px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(var(--zen-glow, 72,199,142),0.35) 0%, rgba(var(--zen-glow, 72,199,142),0) 65%);
+            filter: blur(25px);
+            opacity: 0.8;
+            transition: background 0.4s ease, opacity 0.4s ease;
+            z-index: -1;
+        }
+
+        html[data-theme="light"] .zen-uptime-number::before {
+            opacity: 0.3;
         }
 
         .zen-uptime-label {
@@ -221,56 +149,15 @@
             max-width: 600px;
         }
 
-        /* Zen Link */
-        .zen-link {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            padding: 0.75rem 1.5rem;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 6px;
-            font-size: 0.875rem;
-            font-weight: 500;
-            text-decoration: none;
-            color: inherit;
-            transition: var(--transition);
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .zen-link:hover {
-            background: rgba(255, 255, 255, 0.05);
-            border-color: rgba(255, 255, 255, 0.1);
-        }
-
-        html[data-theme="light"] .zen-link {
-            background: rgba(0, 0, 0, 0.02);
-            border-color: rgba(0, 0, 0, 0.08);
-        }
-
-        html[data-theme="light"] .zen-link:hover {
-            background: rgba(0, 0, 0, 0.05);
-            border-color: rgba(0, 0, 0, 0.15);
-        }
-
         /* Responsive */
         @media (max-width: 768px) {
-            .header-content {
-                padding: 0.75rem 1rem;
-            }
-
-            .header-btn span {
-                display: none;
-            }
-
-            .header-btn {
-                padding: 0.5rem;
-            }
-
             .zen-uptime-number {
                 font-size: clamp(4rem, 20vw, 8rem);
+            }
+
+            .zen-uptime-number::before {
+                inset: -20px;
+                filter: blur(15px);
             }
 
             .zen-stats {
@@ -280,62 +167,11 @@
             .zen-stat-value {
                 font-size: 2rem;
             }
-
-            .zen-link {
-                bottom: 1rem;
-                right: 1rem;
-                font-size: 0.8125rem;
-            }
         }
     </style>
 </head>
 <body>
-    <!-- Header (matches main dashboard) -->
-    <header class="top-header">
-        <div class="header-content">
-            <h1 class="header-title">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 60" width="120" height="60">
-                    <path d="M12,30 L12,12 L24,12 L24,48 L12,48 L12,30 Z M36,30 L36,12 L48,12 L48,48 L36,48 L36,30 Z M60,30 L60,12 L72,12 L72,48 L60,48 L60,30 Z M84,30 L84,12 L96,12 L96,48 L84,48 L84,30 Z"
-                          fill="url(#headerPulseGradient)" opacity="0.2"/>
-                    <line x1="12" y1="30" x2="24" y2="30" stroke="#48c78e" stroke-width="2.5" stroke-linecap="round"/>
-                    <line x1="36" y1="30" x2="48" y2="30" stroke="#48c78e" stroke-width="2.5" stroke-linecap="round"/>
-                    <line x1="60" y1="30" x2="72" y2="30" stroke="#48c78e" stroke-width="2.5" stroke-linecap="round"/>
-                    <line x1="84" y1="30" x2="96" y2="30" stroke="#48c78e" stroke-width="2.5" stroke-linecap="round"/>
-
-                    <circle cx="108" cy="30" r="5" fill="#48c78e" opacity="0.8">
-                        <animate attributeName="opacity"
-                                 values="0.3;1;0.3"
-                                 dur="2s"
-                                 repeatCount="indefinite"
-                                 calcMode="spline"
-                                 keySplines="0.4 0 0.6 1; 0.4 0 0.6 1"/>
-                    </circle>
-
-                    <defs>
-                        <linearGradient id="headerPulseGradient" x1="12" y1="60" x2="108" y2="60" gradientUnits="userSpaceOnUse">
-                            <stop offset="0%" stop-color="#667eea"/>
-                            <stop offset="70%" stop-color="#48c78e"/>
-                            <stop offset="100%" stop-color="#48c78e"/>
-                        </linearGradient>
-                    </defs>
-                </svg>
-                <span class="header-title-text">Hall Monitor</span>
-            </h1>
-            <div class="header-actions" x-data="themeManager()">
-                <button class="header-btn header-btn-icon-only" @click="toggle()" title="Toggle theme">
-                    <i class="fas fa-circle-half-stroke"></i>
-                </button>
-                <button class="header-btn"
-                        hx-get="/api/v1/monitors"
-                        hx-trigger="click"
-                        hx-swap="none"
-                        hx-on::after-request="htmxRefreshHandler(event)">
-                    <i class="fas fa-sync"></i>
-                    <span>Refresh</span>
-                </button>
-            </div>
-        </div>
-    </header>
+    {{template "header" .}}
 
     <!-- Zen Container -->
     <div class="zen-container"
@@ -367,12 +203,6 @@
             All systems operational
         </div>
     </div>
-
-    <!-- Link to Full Dashboard -->
-    <a href="/dashboard" class="zen-link">
-        <i class="fas fa-chart-line"></i>
-        <span>Full Dashboard</span>
-    </a>
 
     <script>
         // Version check
@@ -430,13 +260,16 @@
             if (zenUptimeEl) {
                 zenUptimeEl.textContent = uptime.toFixed(2) + '%';
 
-                // Update gradient color based on health
+                // Update gradient and glow color based on health
                 if (uptime >= 99.9) {
                     zenUptimeEl.style.background = 'linear-gradient(135deg, #48c78e 0%, #667eea 100%)';
+                    zenUptimeEl.style.setProperty('--zen-glow', '72,199,142'); // Green glow
                 } else if (uptime >= 95) {
                     zenUptimeEl.style.background = 'linear-gradient(135deg, #ffdd57 0%, #667eea 100%)';
+                    zenUptimeEl.style.setProperty('--zen-glow', '255,221,87'); // Yellow glow
                 } else {
                     zenUptimeEl.style.background = 'linear-gradient(135deg, #f14668 0%, #667eea 100%)';
+                    zenUptimeEl.style.setProperty('--zen-glow', '241,70,104'); // Red glow
                 }
                 zenUptimeEl.style.webkitBackgroundClip = 'text';
                 zenUptimeEl.style.webkitTextFillColor = 'transparent';

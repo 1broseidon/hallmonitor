@@ -1,0 +1,99 @@
+{{define "header"}}
+<header class="top-header">
+    <div class="header-content">
+        <h1 class="header-title">
+            <svg width="64" height="64" viewBox="0 0 140 120" fill="none" xmlns="http://www.w3.org/2000/svg" style="overflow: visible;">
+                <!-- Heartbeat line with smooth deceleration -->
+                <path d="M12 60L30 60L39 45L48 75L57 30L66 82.5L75 60L93 60L108 60"
+                      stroke="url(#headerPulseGradient)"
+                      stroke-width="4"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      fill="none"
+                      stroke-dasharray="300"
+                      stroke-dashoffset="300">
+                    <animate attributeName="stroke-dashoffset"
+                             from="300"
+                             to="0"
+                             dur="0.9s"
+                             fill="freeze"
+                             calcMode="spline"
+                             keySplines="0 0 0.2 1"/>
+                </path>
+
+                <!-- Solid core dot (never changes) -->
+                <circle cx="108" cy="60" r="6" fill="#48c78e"/>
+
+                <!-- Pulsing glow rings (expand outward with smoother easing) -->
+                <circle cx="108" cy="60" r="6" fill="#48c78e" opacity="0">
+                    <animate attributeName="opacity"
+                             values="0;0.4;0"
+                             dur="2s"
+                             repeatCount="indefinite"
+                             calcMode="spline"
+                             keySplines="0.4 0 0.6 1; 0.4 0 0.6 1"/>
+                    <animate attributeName="r"
+                             values="6;18;6"
+                             dur="2s"
+                             repeatCount="indefinite"
+                             calcMode="spline"
+                             keySplines="0.4 0 0.6 1; 0.4 0 0.6 1"/>
+                </circle>
+                <circle cx="108" cy="60" r="6" fill="#48c78e" opacity="0">
+                    <animate attributeName="opacity"
+                             values="0;0.2;0"
+                             dur="2s"
+                             begin="0.3s"
+                             repeatCount="indefinite"
+                             calcMode="spline"
+                             keySplines="0.4 0 0.6 1; 0.4 0 0.6 1"/>
+                    <animate attributeName="r"
+                             values="6;22;6"
+                             dur="2s"
+                             begin="0.3s"
+                             repeatCount="indefinite"
+                             calcMode="spline"
+                             keySplines="0.4 0 0.6 1; 0.4 0 0.6 1"/>
+                </circle>
+
+                <defs>
+                    <linearGradient id="headerPulseGradient" x1="12" y1="60" x2="108" y2="60" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stop-color="#667eea"/>
+                        <stop offset="70%" stop-color="#48c78e"/>
+                        <stop offset="100%" stop-color="#48c78e"/>
+                    </linearGradient>
+                </defs>
+            </svg>
+            <span class="header-title-text">Hall Monitor</span>
+        </h1>
+        <div class="header-actions" x-data="themeManager()">
+            {{if .IsAmbient}}
+            <a href="/dashboard" class="header-btn header-btn-icon-only" title="Switch to Metric View">
+                <i class="fas fa-compress"></i>
+            </a>
+            {{else}}
+            <a href="/dashboard/ambient" class="header-btn header-btn-icon-only" title="Switch to Ambient View">
+                <i class="fas fa-expand"></i>
+            </a>
+            {{end}}
+            <button class="header-btn header-btn-icon-only" @click="toggle()" title="Toggle theme">
+                <i class="fas fa-circle-half-stroke"></i>
+            </button>
+            <button class="header-btn"
+                    hx-get="/api/v1/monitors"
+                    hx-trigger="click"
+                    hx-swap="none"
+                    hx-on::after-request="htmxRefreshHandler(event)">
+                <i class="fas fa-sync"></i>
+                <span>Refresh</span>
+            </button>
+            {{if not .IsAmbient}}
+            <button class="header-btn" onclick="exportToGrafana()">
+                <i class="fas fa-download"></i>
+                <span>Export</span>
+            </button>
+            {{end}}
+        </div>
+    </div>
+</header>
+{{end}}
