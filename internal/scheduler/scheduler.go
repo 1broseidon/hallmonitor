@@ -11,6 +11,7 @@ import (
 	"github.com/1broseidon/hallmonitor/internal/logging"
 	"github.com/1broseidon/hallmonitor/internal/metrics"
 	"github.com/1broseidon/hallmonitor/internal/monitors"
+	"github.com/1broseidon/hallmonitor/internal/storage"
 	"github.com/1broseidon/hallmonitor/pkg/models"
 )
 
@@ -79,12 +80,26 @@ func (s *Scheduler) Start(ctx context.Context) error {
 	s.workers.Start(ctx)
 
 	// Start aggregator if available
+	// Note: Check for both nil interface and nil concrete value
 	if s.aggregator != nil {
-		if err := s.aggregator.Start(ctx); err != nil {
-			s.logger.WithComponent(logging.ComponentScheduler).
-				WithError(err).
-				Error("Failed to start aggregator")
-			// Continue anyway - aggregation is not critical for monitoring
+		// Use type assertion to check if the concrete value is nil
+		switch agg := s.aggregator.(type) {
+		case *storage.Aggregator:
+			if agg != nil {
+				if err := s.aggregator.Start(ctx); err != nil {
+					s.logger.WithComponent(logging.ComponentScheduler).
+						WithError(err).
+						Error("Failed to start aggregator")
+					// Continue anyway - aggregation is not critical for monitoring
+				}
+			}
+		default:
+			// For other aggregator implementations
+			if err := s.aggregator.Start(ctx); err != nil {
+				s.logger.WithComponent(logging.ComponentScheduler).
+					WithError(err).
+					Error("Failed to start aggregator")
+			}
 		}
 	}
 
@@ -111,11 +126,25 @@ func (s *Scheduler) Stop() error {
 	close(s.stopChan)
 
 	// Stop aggregator if available
+	// Note: Check for both nil interface and nil concrete value
 	if s.aggregator != nil {
-		if err := s.aggregator.Stop(); err != nil {
-			s.logger.WithComponent(logging.ComponentScheduler).
-				WithError(err).
-				Warn("Error stopping aggregator")
+		// Use type assertion to check if the concrete value is nil
+		switch agg := s.aggregator.(type) {
+		case *storage.Aggregator:
+			if agg != nil {
+				if err := s.aggregator.Stop(); err != nil {
+					s.logger.WithComponent(logging.ComponentScheduler).
+						WithError(err).
+						Warn("Error stopping aggregator")
+				}
+			}
+		default:
+			// For other aggregator implementations
+			if err := s.aggregator.Stop(); err != nil {
+				s.logger.WithComponent(logging.ComponentScheduler).
+					WithError(err).
+					Warn("Error stopping aggregator")
+			}
 		}
 	}
 
@@ -258,7 +287,7 @@ func (s *Scheduler) checkAndScheduleMonitors(ctx context.Context, now time.Time,
 			default:
 				if s.workers.Submit(job) {
 					// Update next execution time
-					interval := monitor.GetConfig().Interval
+					interval := monitor.GetConfig().Interval.ToDuration()
 					if interval == 0 {
 						interval = 30 * time.Second // fallback
 					}

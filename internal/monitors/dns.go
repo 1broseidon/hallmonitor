@@ -42,7 +42,7 @@ func NewDNSMonitor(config *models.Monitor, group string, logger *logging.Logger,
 	}
 
 	// Create custom resolver with timeout
-	timeout := config.Timeout
+	timeout := config.Timeout.ToDuration()
 	if timeout == 0 {
 		timeout = 5 * time.Second
 	}

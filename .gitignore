@@ -24,6 +24,9 @@ config.yaml
 # Personal tool configs
 .promptext.yml
 
+# Implementation guides (local reference only)
+STORAGE_BACKEND_IMPLEMENTATIONS.md
+
 # IDE and editor files
 .vscode/
 .idea/

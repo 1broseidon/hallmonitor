@@ -1,0 +1,40 @@
+# HallMonitor Configuration Example - PostgreSQL Storage
+# This example shows how to configure HallMonitor with PostgreSQL storage backend
+
+server:
+  port: "7878"
+  host: "0.0.0.0"
+  enableDashboard: true
+
+metrics:
+  enabled: true
+  path: "/metrics"
+
+logging:
+  level: "info"
+  format: "json"
+  output: "stdout"
+
+# Storage configuration with PostgreSQL
+storage:
+  backend: "postgres"
+  postgres:
+    host: "localhost"
+    port: 5432
+    database: "hallmonitor"
+    user: "hallmonitor"
+    password: ""                      # Set via STORAGE_POSTGRES_PASSWORD environment variable
+    sslmode: "disable"                # Use "disable" for local dev, "require" for production
+    retentionDays: 90                 # Keep data for 90 days
+
+monitoring:
+  defaultInterval: "30s"
+  defaultTimeout: "10s"
+  groups:
+    - name: "websites"
+      interval: "1m"
+      monitors:
+        - type: "http"
+          name: "example-website"
+          url: "https://example.com"
+          expectedStatus: 200

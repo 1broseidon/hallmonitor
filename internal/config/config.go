@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"time"
 
+	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
 
@@ -52,18 +54,20 @@ type LoggingConfig struct {
 
 // MonitoringConfig contains monitoring configuration
 type MonitoringConfig struct {
-	DefaultInterval                 time.Duration         `yaml:"defaultInterval" mapstructure:"defaultInterval"`
-	DefaultTimeout                  time.Duration         `yaml:"defaultTimeout" mapstructure:"defaultTimeout"`
+	DefaultInterval                 models.Duration       `yaml:"defaultInterval" mapstructure:"defaultInterval"`
+	DefaultTimeout                  models.Duration       `yaml:"defaultTimeout" mapstructure:"defaultTimeout"`
 	DefaultSSLCertExpiryWarningDays int                   `yaml:"defaultSSLCertExpiryWarningDays" mapstructure:"defaultSSLCertExpiryWarningDays"`
 	Groups                          []models.MonitorGroup `yaml:"groups" mapstructure:"groups"`
 }
 
 // StorageConfig contains persistent storage configuration
 type StorageConfig struct {
-	Backend string       `yaml:"backend" mapstructure:"backend"` // "none" or "badger"
-	Badger  BadgerConfig `yaml:"badger" mapstructure:"badger"`
+	Backend  string         `yaml:"backend" mapstructure:"backend"` // "none", "badger", "postgres", or "influxdb"
+	Badger   BadgerConfig   `yaml:"badger" mapstructure:"badger"`
+	Postgres PostgresConfig `yaml:"postgres" mapstructure:"postgres"`
+	InfluxDB InfluxDBConfig `yaml:"influxdb" mapstructure:"influxdb"`
 
-	// Deprecated: Use Backend and Badger fields instead. Kept for backward compatibility.
+	// Deprecated: Use Backend and backend-specific fields instead. Kept for backward compatibility.
 	Enabled           bool   `yaml:"enabled" mapstructure:"enabled"`
 	Path              string `yaml:"path" mapstructure:"path"`
 	RetentionDays     int    `yaml:"retentionDays" mapstructure:"retentionDays"`
@@ -76,6 +80,25 @@ type BadgerConfig struct {
 	Path              string `yaml:"path" mapstructure:"path"`
 	RetentionDays     int    `yaml:"retentionDays" mapstructure:"retentionDays"`
 	EnableAggregation bool   `yaml:"enableAggregation" mapstructure:"enableAggregation"`
+}
+
+// PostgresConfig contains PostgreSQL-specific configuration
+type PostgresConfig struct {
+	Host          string `yaml:"host" mapstructure:"host"`
+	Port          int    `yaml:"port" mapstructure:"port"`
+	Database      string `yaml:"database" mapstructure:"database"`
+	User          string `yaml:"user" mapstructure:"user"`
+	Password      string `yaml:"password" mapstructure:"password"`
+	SSLMode       string `yaml:"sslmode" mapstructure:"sslmode"`
+	RetentionDays int    `yaml:"retentionDays" mapstructure:"retentionDays"`
+}
+
+// InfluxDBConfig contains InfluxDB-specific configuration
+type InfluxDBConfig struct {
+	URL    string `yaml:"url" mapstructure:"url"`
+	Token  string `yaml:"token" mapstructure:"token"`
+	Org    string `yaml:"org" mapstructure:"org"`
+	Bucket string `yaml:"bucket" mapstructure:"bucket"`
 }
 
 // AlertingConfig contains alerting configuration
@@ -98,6 +121,60 @@ type AlertRule struct {
 type WebhookConfig struct {
 	URL    string   `yaml:"url" mapstructure:"url"`
 	Events []string `yaml:"events" mapstructure:"events"`
+}
+
+// stringToDurationHookFunc is a mapstructure decode hook that converts strings to durations
+func stringToDurationHookFunc() mapstructure.DecodeHookFunc {
+	return func(
+		f reflect.Type,
+		t reflect.Type,
+		data interface{},
+	) (interface{}, error) {
+		// Check if target type is models.Duration or time.Duration
+		isModelsDuration := t == reflect.TypeOf(models.Duration(0))
+		isTimeDuration := t == reflect.TypeOf(time.Duration(0))
+
+		if !isModelsDuration && !isTimeDuration {
+			return data, nil
+		}
+
+		// Handle string source
+		if f.Kind() == reflect.String {
+			s := data.(string)
+			if s == "" {
+				if isModelsDuration {
+					return models.Duration(0), nil
+				}
+				return time.Duration(0), nil
+			}
+			dur, err := time.ParseDuration(s)
+			if err != nil {
+				return nil, fmt.Errorf("invalid duration string %q: %w", s, err)
+			}
+			if isModelsDuration {
+				return models.Duration(dur), nil
+			}
+			return dur, nil
+		}
+
+		// Handle numeric source (nanoseconds)
+		var value int64
+		switch f.Kind() {
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			value = reflect.ValueOf(data).Int()
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			value = int64(reflect.ValueOf(data).Uint())
+		case reflect.Float32, reflect.Float64:
+			value = int64(reflect.ValueOf(data).Float())
+		default:
+			return data, nil
+		}
+
+		if isModelsDuration {
+			return models.Duration(value), nil
+		}
+		return time.Duration(value), nil
+	}
 }
 
 // LoadConfig loads configuration from file
@@ -124,6 +201,17 @@ func LoadConfig(configPath string) (*Config, error) {
 	v.SetDefault("storage.badger.path", "./data/hallmonitor.db")
 	v.SetDefault("storage.badger.retentionDays", 30)
 	v.SetDefault("storage.badger.enableAggregation", true)
+	// PostgreSQL defaults
+	v.SetDefault("storage.postgres.host", "localhost")
+	v.SetDefault("storage.postgres.port", 5432)
+	v.SetDefault("storage.postgres.database", "hallmonitor")
+	v.SetDefault("storage.postgres.user", "hallmonitor")
+	v.SetDefault("storage.postgres.sslmode", "disable")
+	v.SetDefault("storage.postgres.retentionDays", 30)
+	// InfluxDB defaults
+	v.SetDefault("storage.influxdb.url", "http://localhost:8086")
+	v.SetDefault("storage.influxdb.org", "hallmonitor")
+	v.SetDefault("storage.influxdb.bucket", "monitor_results")
 	// Backward compatibility defaults
 	v.SetDefault("storage.enabled", true)
 	v.SetDefault("storage.path", "./data/hallmonitor.db")
@@ -152,7 +240,8 @@ func LoadConfig(configPath string) (*Config, error) {
 	}
 
 	var config Config
-	if err := v.Unmarshal(&config); err != nil {
+	// Unmarshal with custom decode hook for Duration type
+	if err := v.Unmarshal(&config, viper.DecodeHook(stringToDurationHookFunc())); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
@@ -233,29 +322,29 @@ func (c *Config) Validate() error {
 			}
 
 			// Validate timeout and interval
-			if monitor.Timeout < 0 {
+			if monitor.Timeout.ToDuration() < 0 {
 				return fmt.Errorf("monitor %s has negative timeout: %v", monitor.Name, monitor.Timeout)
 			}
-			if monitor.Timeout > 5*time.Minute {
+			if monitor.Timeout.ToDuration() > 5*time.Minute {
 				return fmt.Errorf("monitor %s timeout too long (max 5 minutes): %v", monitor.Name, monitor.Timeout)
 			}
-			if monitor.Interval < 0 {
+			if monitor.Interval.ToDuration() < 0 {
 				return fmt.Errorf("monitor %s has negative interval: %v", monitor.Name, monitor.Interval)
 			}
-			if monitor.Interval > 0 && monitor.Interval < time.Second {
+			if monitor.Interval.ToDuration() > 0 && monitor.Interval.ToDuration() < time.Second {
 				return fmt.Errorf("monitor %s interval too short (min 1 second): %v", monitor.Name, monitor.Interval)
 			}
 		}
 	}
 
 	// Validate global defaults
-	if c.Monitoring.DefaultTimeout < 0 {
+	if c.Monitoring.DefaultTimeout.ToDuration() < 0 {
 		return fmt.Errorf("monitoring.defaultTimeout cannot be negative")
 	}
-	if c.Monitoring.DefaultInterval < 0 {
+	if c.Monitoring.DefaultInterval.ToDuration() < 0 {
 		return fmt.Errorf("monitoring.defaultInterval cannot be negative")
 	}
-	if c.Monitoring.DefaultInterval > 0 && c.Monitoring.DefaultInterval < time.Second {
+	if c.Monitoring.DefaultInterval.ToDuration() > 0 && c.Monitoring.DefaultInterval.ToDuration() < time.Second {
 		return fmt.Errorf("monitoring.defaultInterval too short (min 1 second)")
 	}
 

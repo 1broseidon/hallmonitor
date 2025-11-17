@@ -32,8 +32,8 @@ type Monitor struct {
 	Target   string                `yaml:"target,omitempty" json:"target,omitempty"`
 	URL      string                `yaml:"url,omitempty" json:"url,omitempty"`
 	Query    string                `yaml:"query,omitempty" json:"query,omitempty"`
-	Interval time.Duration         `yaml:"interval,omitempty" json:"interval,omitempty"`
-	Timeout  time.Duration         `yaml:"timeout,omitempty" json:"timeout,omitempty"`
+	Interval Duration              `yaml:"interval,omitempty" json:"interval,omitempty"`
+	Timeout  Duration              `yaml:"timeout,omitempty" json:"timeout,omitempty"`
 	Enabled  *bool                 `yaml:"enabled,omitempty" json:"enabled,omitempty"`
 	Headers  map[string]string     `yaml:"headers,omitempty" json:"headers,omitempty"`
 	Metrics  *MonitorMetricsConfig `yaml:"metrics,omitempty" json:"metrics,omitempty"`
@@ -60,9 +60,9 @@ type MonitorMetricsConfig struct {
 
 // MonitorGroup represents a group of related monitors
 type MonitorGroup struct {
-	Name     string        `yaml:"name" json:"name"`
-	Interval time.Duration `yaml:"interval,omitempty" json:"interval,omitempty"`
-	Monitors []Monitor     `yaml:"monitors" json:"monitors"`
+	Name     string    `yaml:"name" json:"name"`
+	Interval Duration  `yaml:"interval,omitempty" json:"interval,omitempty"`
+	Monitors []Monitor `yaml:"monitors" json:"monitors"`
 }
 
 // MonitorResult represents the result of a monitor check

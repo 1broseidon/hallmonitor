@@ -15,6 +15,10 @@ const (
 	BackendNone BackendType = "none"
 	// BackendBadger uses BadgerDB for embedded storage
 	BackendBadger BackendType = "badger"
+	// BackendPostgres uses PostgreSQL for persistent storage
+	BackendPostgres BackendType = "postgres"
+	// BackendInfluxDB uses InfluxDB for time-series storage
+	BackendInfluxDB BackendType = "influxdb"
 )
 
 // NewStore creates a new storage backend based on configuration
@@ -59,7 +63,31 @@ func NewStore(cfg *config.StorageConfig, logger *logging.Logger) (ResultStore, e
 
 		return NewBadgerStore(path, retentionDays, logger)
 
+	case BackendPostgres:
+		logger.Info("Using PostgreSQL storage")
+		connString := fmt.Sprintf(
+			"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
+			cfg.Postgres.Host,
+			cfg.Postgres.Port,
+			cfg.Postgres.User,
+			cfg.Postgres.Password,
+			cfg.Postgres.Database,
+			cfg.Postgres.SSLMode,
+		)
+
+		return NewPostgresStore(connString, cfg.Postgres.RetentionDays, logger)
+
+	case BackendInfluxDB:
+		logger.Info("Using InfluxDB storage")
+		return NewInfluxDBStore(
+			cfg.InfluxDB.URL,
+			cfg.InfluxDB.Token,
+			cfg.InfluxDB.Org,
+			cfg.InfluxDB.Bucket,
+			logger,
+		)
+
 	default:
-		return nil, fmt.Errorf("unknown storage backend: %s (valid options: none, badger)", cfg.Backend)
+		return nil, fmt.Errorf("unknown storage backend: %s (valid options: none, badger, postgres, influxdb)", cfg.Backend)
 	}
 }

@@ -128,7 +128,7 @@ func (p *PingMonitor) Check(ctx context.Context) (*models.MonitorResult, error) 
 
 // performPing executes the actual ICMP ping operation
 func (p *PingMonitor) performPing(ctx context.Context) (*models.PingResult, error) {
-	timeout := p.Config.Timeout
+	timeout := p.Config.Timeout.ToDuration()
 	if timeout == 0 {
 		timeout = 3 * time.Second
 	}

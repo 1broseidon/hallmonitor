@@ -23,7 +23,7 @@ type HTTPMonitor struct {
 // NewHTTPMonitor creates a new HTTP monitor
 func NewHTTPMonitor(config *models.Monitor, group string, logger *logging.Logger, metrics *metrics.Metrics) (*HTTPMonitor, error) {
 	// Create HTTP client with timeout
-	timeout := config.Timeout
+	timeout := config.Timeout.ToDuration()
 	if timeout == 0 {
 		timeout = 10 * time.Second
 	}

@@ -40,7 +40,7 @@ func (t *TCPMonitor) Check(ctx context.Context) (*models.MonitorResult, error) {
 	startTime := time.Now()
 
 	// Set timeout from context or config
-	timeout := t.Config.Timeout
+	timeout := t.Config.Timeout.ToDuration()
 	if timeout == 0 {
 		timeout = 5 * time.Second
 	}

@@ -855,24 +855,44 @@
                 <!-- Storage Backend Selection -->
                 <div class="form-group">
                     <label class="form-label">Storage Backend</label>
-                    <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
-                        <label class="toggle-switch" style="flex: 1; padding: 1rem; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; cursor: pointer;" :style="storageForm.backend === 'badger' ? 'border-color: rgba(102, 126, 234, 0.5);' : ''">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 0.5rem;">
+                        <label class="toggle-switch" style="padding: 1rem; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; cursor: pointer;" :style="storageForm.backend === 'badger' ? 'border-color: rgba(102, 126, 234, 0.5);' : ''">
                             <input type="radio" name="backend" value="badger" x-model="storageForm.backend" style="margin-right: 0.5rem;">
                             <div style="flex: 1;">
                                 <div style="font-weight: 600; margin-bottom: 0.25rem;">
-                                    <i class="fas fa-database"></i> BadgerDB (Embedded)
+                                    <i class="fas fa-database"></i> BadgerDB
                                 </div>
-                                <div class="form-hint" style="margin: 0;">Full historical data with local storage</div>
+                                <div class="form-hint" style="margin: 0;">Embedded local storage</div>
                             </div>
                         </label>
 
-                        <label class="toggle-switch" style="flex: 1; padding: 1rem; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; cursor: pointer;" :style="storageForm.backend === 'none' ? 'border-color: rgba(102, 126, 234, 0.5);' : ''">
+                        <label class="toggle-switch" style="padding: 1rem; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; cursor: pointer;" :style="storageForm.backend === 'postgres' ? 'border-color: rgba(102, 126, 234, 0.5);' : ''">
+                            <input type="radio" name="backend" value="postgres" x-model="storageForm.backend" style="margin-right: 0.5rem;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; margin-bottom: 0.25rem;">
+                                    <i class="fas fa-server"></i> PostgreSQL
+                                </div>
+                                <div class="form-hint" style="margin: 0;">SQL database backend</div>
+                            </div>
+                        </label>
+
+                        <label class="toggle-switch" style="padding: 1rem; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; cursor: pointer;" :style="storageForm.backend === 'influxdb' ? 'border-color: rgba(102, 126, 234, 0.5);' : ''">
+                            <input type="radio" name="backend" value="influxdb" x-model="storageForm.backend" style="margin-right: 0.5rem;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; margin-bottom: 0.25rem;">
+                                    <i class="fas fa-wave-square"></i> InfluxDB
+                                </div>
+                                <div class="form-hint" style="margin: 0;">Time-series database</div>
+                            </div>
+                        </label>
+
+                        <label class="toggle-switch" style="padding: 1rem; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; cursor: pointer;" :style="storageForm.backend === 'none' ? 'border-color: rgba(102, 126, 234, 0.5);' : ''">
                             <input type="radio" name="backend" value="none" x-model="storageForm.backend" style="margin-right: 0.5rem;">
                             <div style="flex: 1;">
                                 <div style="font-weight: 600; margin-bottom: 0.25rem;">
                                     <i class="fas fa-chart-line"></i> Metrics Only
                                 </div>
-                                <div class="form-hint" style="margin: 0;">Prometheus metrics without persistence</div>
+                                <div class="form-hint" style="margin: 0;">No persistence</div>
                             </div>
                         </label>
                     </div>
@@ -916,6 +936,91 @@
                             <span class="toggle-label">Enable Data Aggregation</span>
                         </label>
                         <span class="form-hint">Pre-compute hourly and daily summaries for faster queries</span>
+                    </div>
+                </div>
+
+                <!-- PostgreSQL Settings -->
+                <div x-show="storageForm.backend === 'postgres'" style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid rgba(255, 255, 255, 0.08);">
+                    <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1.5rem;">
+                        <i class="fas fa-server"></i> PostgreSQL Settings
+                    </h3>
+
+                    <div class="form-group">
+                        <label class="form-label">Host</label>
+                        <input type="text" class="form-input" x-model="storageForm.postgres.host" placeholder="localhost">
+                        <span class="form-hint">PostgreSQL server hostname or IP</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Port</label>
+                        <input type="number" class="form-input" x-model.number="storageForm.postgres.port" placeholder="5432">
+                        <span class="form-hint">PostgreSQL server port (default: 5432)</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Database</label>
+                        <input type="text" class="form-input" x-model="storageForm.postgres.database" placeholder="hallmonitor">
+                        <span class="form-hint">Database name to use</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">User</label>
+                        <input type="text" class="form-input" x-model="storageForm.postgres.user" placeholder="hallmonitor">
+                        <span class="form-hint">PostgreSQL username</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <input type="password" class="form-input" x-model="storageForm.postgres.password" placeholder="Enter password">
+                        <span class="form-hint">PostgreSQL password (use environment variable in production)</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">SSL Mode</label>
+                        <select class="form-select" x-model="storageForm.postgres.sslmode">
+                            <option value="disable">Disable</option>
+                            <option value="require">Require</option>
+                            <option value="verify-ca">Verify CA</option>
+                            <option value="verify-full">Verify Full</option>
+                        </select>
+                        <span class="form-hint">SSL connection mode (use "require" for production)</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Retention Period (Days)</label>
+                        <input type="number" class="form-input" x-model.number="storageForm.postgres.retentionDays" min="1" max="365" placeholder="30">
+                        <span class="form-hint">How long to keep monitor results (1-365 days)</span>
+                    </div>
+                </div>
+
+                <!-- InfluxDB Settings -->
+                <div x-show="storageForm.backend === 'influxdb'" style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid rgba(255, 255, 255, 0.08);">
+                    <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1.5rem;">
+                        <i class="fas fa-wave-square"></i> InfluxDB Settings
+                    </h3>
+
+                    <div class="form-group">
+                        <label class="form-label">URL</label>
+                        <input type="url" class="form-input" x-model="storageForm.influxdb.url" placeholder="http://localhost:8086">
+                        <span class="form-hint">InfluxDB server URL</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Token</label>
+                        <input type="password" class="form-input" x-model="storageForm.influxdb.token" placeholder="Enter API token">
+                        <span class="form-hint">InfluxDB authentication token (use environment variable in production)</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Organization</label>
+                        <input type="text" class="form-input" x-model="storageForm.influxdb.org" placeholder="hallmonitor">
+                        <span class="form-hint">InfluxDB organization name</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Bucket</label>
+                        <input type="text" class="form-input" x-model="storageForm.influxdb.bucket" placeholder="monitor_results">
+                        <span class="form-hint">InfluxDB bucket for storing results</span>
                     </div>
                 </div>
 
@@ -1160,6 +1265,21 @@
                         path: './data/hallmonitor.db',
                         retentionDays: 30,
                         enableAggregation: true
+                    },
+                    postgres: {
+                        host: 'localhost',
+                        port: 5432,
+                        database: 'hallmonitor',
+                        user: 'hallmonitor',
+                        password: '',
+                        sslmode: 'disable',
+                        retentionDays: 30
+                    },
+                    influxdb: {
+                        url: 'http://localhost:8086',
+                        token: '',
+                        org: 'hallmonitor',
+                        bucket: 'monitor_results'
                     }
                 },
 
@@ -1197,6 +1317,25 @@
                                 retentionDays: data.storage.badger?.retentionDays || 30,
                                 enableAggregation: data.storage.badger?.enableAggregation ?? true
                             };
+                            if (data.storage.postgres) {
+                                this.storageForm.postgres = {
+                                    host: data.storage.postgres.host || 'localhost',
+                                    port: data.storage.postgres.port || 5432,
+                                    database: data.storage.postgres.database || 'hallmonitor',
+                                    user: data.storage.postgres.user || 'hallmonitor',
+                                    password: data.storage.postgres.password || '',
+                                    sslmode: data.storage.postgres.sslmode || 'disable',
+                                    retentionDays: data.storage.postgres.retentionDays || 30
+                                };
+                            }
+                            if (data.storage.influxdb) {
+                                this.storageForm.influxdb = {
+                                    url: data.storage.influxdb.url || 'http://localhost:8086',
+                                    token: data.storage.influxdb.token || '',
+                                    org: data.storage.influxdb.org || 'hallmonitor',
+                                    bucket: data.storage.influxdb.bucket || 'monitor_results'
+                                };
+                            }
                         }
                     } catch (error) {
                         console.error('Failed to load config:', error);

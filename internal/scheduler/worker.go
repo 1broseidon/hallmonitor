@@ -199,7 +199,7 @@ func (w *Worker) processJob(ctx context.Context, job *MonitorJob) {
 	monitorName := monitor.GetName()
 
 	// Create timeout context for the monitor check
-	timeout := monitor.GetConfig().Timeout
+	timeout := monitor.GetConfig().Timeout.ToDuration()
 	if timeout == 0 {
 		timeout = 10 * time.Second
 	}
