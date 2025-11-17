@@ -72,4 +72,4 @@ go.work.sum
 # Debug files
 debug
 debug.test
-*.pprof
+*.pprofserver
