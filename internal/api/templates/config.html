@@ -1038,8 +1038,24 @@
                 showToast: false,
                 toastMessage: '',
                 toastType: 'success',
-                monitorForm: this.getEmptyMonitorForm(),
-                groupForm: this.getEmptyGroupForm(),
+                monitorForm: {
+                    type: 'http',
+                    name: '',
+                    url: '',
+                    target: '',
+                    query: '',
+                    queryType: 'A',
+                    interval: '30s',
+                    timeout: '10s',
+                    expectedStatus: 200,
+                    enabled: true,
+                    group: ''
+                },
+                groupForm: {
+                    name: '',
+                    interval: '30s',
+                    monitors: []
+                },
 
                 async init() {
                     await this.loadData();
