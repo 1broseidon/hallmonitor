@@ -835,11 +835,108 @@
         <div class="tab-content" :class="{ 'active': activeTab === 'storage' }">
             <div class="action-bar">
                 <div class="action-bar-title">Storage Configuration</div>
+                <button class="btn btn-primary" @click="saveStorageConfig()">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
             </div>
-            <div class="empty-state" style="padding: 3rem 2rem;">
-                <i class="fas fa-database"></i>
-                <p>Storage configuration UI coming soon</p>
-                <p class="form-hint" style="margin-top: 0.5rem;">Edit config.yml directly for now</p>
+
+            <div class="table-container" style="padding: 2rem;">
+                <!-- Warning Banner -->
+                <div style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); border-radius: 8px; padding: 1rem; margin-bottom: 2rem;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <i class="fas fa-exclamation-triangle" style="color: #ffc107;"></i>
+                        <div>
+                            <strong>Important:</strong> Changing the storage backend requires a server restart to take effect.
+                            <br><span class="form-hint" style="opacity: 0.7;">Your existing data will remain in the database files.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Storage Backend Selection -->
+                <div class="form-group">
+                    <label class="form-label">Storage Backend</label>
+                    <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
+                        <label class="toggle-switch" style="flex: 1; padding: 1rem; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; cursor: pointer;" :style="storageForm.backend === 'badger' ? 'border-color: rgba(102, 126, 234, 0.5);' : ''">
+                            <input type="radio" name="backend" value="badger" x-model="storageForm.backend" style="margin-right: 0.5rem;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; margin-bottom: 0.25rem;">
+                                    <i class="fas fa-database"></i> BadgerDB (Embedded)
+                                </div>
+                                <div class="form-hint" style="margin: 0;">Full historical data with local storage</div>
+                            </div>
+                        </label>
+
+                        <label class="toggle-switch" style="flex: 1; padding: 1rem; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; cursor: pointer;" :style="storageForm.backend === 'none' ? 'border-color: rgba(102, 126, 234, 0.5);' : ''">
+                            <input type="radio" name="backend" value="none" x-model="storageForm.backend" style="margin-right: 0.5rem;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; margin-bottom: 0.25rem;">
+                                    <i class="fas fa-chart-line"></i> Metrics Only
+                                </div>
+                                <div class="form-hint" style="margin: 0;">Prometheus metrics without persistence</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- BadgerDB Settings (shown only when backend is badger) -->
+                <div x-show="storageForm.backend === 'badger'" style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid rgba(255, 255, 255, 0.08);">
+                    <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1.5rem;">
+                        <i class="fas fa-cog"></i> BadgerDB Settings
+                    </h3>
+
+                    <!-- Enabled Toggle -->
+                    <div class="form-group">
+                        <label class="toggle-switch">
+                            <input type="checkbox" x-model="storageForm.badger.enabled">
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">Enable BadgerDB Storage</span>
+                        </label>
+                        <span class="form-hint">Turn on to persist monitor results locally</span>
+                    </div>
+
+                    <!-- Database Path -->
+                    <div class="form-group">
+                        <label class="form-label">Database Path</label>
+                        <input type="text" class="form-input" x-model="storageForm.badger.path" placeholder="./data/hallmonitor.db">
+                        <span class="form-hint">Location to store the BadgerDB database files</span>
+                    </div>
+
+                    <!-- Retention Days -->
+                    <div class="form-group">
+                        <label class="form-label">Retention Period (Days)</label>
+                        <input type="number" class="form-input" x-model.number="storageForm.badger.retentionDays" min="1" max="365" placeholder="30">
+                        <span class="form-hint">How long to keep monitor results (1-365 days)</span>
+                    </div>
+
+                    <!-- Enable Aggregation -->
+                    <div class="form-group">
+                        <label class="toggle-switch">
+                            <input type="checkbox" x-model="storageForm.badger.enableAggregation">
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">Enable Data Aggregation</span>
+                        </label>
+                        <span class="form-hint">Pre-compute hourly and daily summaries for faster queries</span>
+                    </div>
+                </div>
+
+                <!-- Info panel for "none" backend -->
+                <div x-show="storageForm.backend === 'none'" style="margin-top: 2rem; padding: 1.5rem; background: rgba(102, 126, 234, 0.1); border: 1px solid rgba(102, 126, 234, 0.3); border-radius: 8px;">
+                    <h4 style="font-weight: 600; margin-bottom: 0.75rem;">
+                        <i class="fas fa-info-circle"></i> Metrics-Only Mode
+                    </h4>
+                    <p style="font-size: 0.875rem; margin-bottom: 0.5rem;">
+                        In this mode, HallMonitor will:
+                    </p>
+                    <ul style="font-size: 0.875rem; margin-left: 1.5rem; opacity: 0.9;">
+                        <li>Export metrics via <code style="background: rgba(255,255,255,0.1); padding: 0.125rem 0.375rem; border-radius: 3px;">/metrics</code> endpoint</li>
+                        <li>Not store historical monitor results</li>
+                        <li>Disable historical queries and uptime calculations in API</li>
+                        <li>Use minimal disk space (no database files)</li>
+                    </ul>
+                    <p class="form-hint" style="margin-top: 0.75rem;">
+                        <i class="fas fa-lightbulb"></i> <strong>Tip:</strong> Use this mode when running alongside Prometheus or another time-series database.
+                    </p>
+                </div>
             </div>
         </div>
 
@@ -1056,6 +1153,15 @@
                     interval: '30s',
                     monitors: []
                 },
+                storageForm: {
+                    backend: 'badger',
+                    badger: {
+                        enabled: true,
+                        path: './data/hallmonitor.db',
+                        retentionDays: 30,
+                        enableAggregation: true
+                    }
+                },
 
                 async init() {
                     await this.loadData();
@@ -1081,6 +1187,17 @@
                                 });
                             }
                         });
+
+                        // Load storage configuration
+                        if (data.storage) {
+                            this.storageForm.backend = data.storage.backend || 'badger';
+                            this.storageForm.badger = {
+                                enabled: data.storage.badger?.enabled ?? true,
+                                path: data.storage.badger?.path || './data/hallmonitor.db',
+                                retentionDays: data.storage.badger?.retentionDays || 30,
+                                enableAggregation: data.storage.badger?.enableAggregation ?? true
+                            };
+                        }
                     } catch (error) {
                         console.error('Failed to load config:', error);
                         this.toast('Failed to load configuration', 'error');
@@ -1292,6 +1409,43 @@
                     if (seconds < 60) return `${seconds}s`;
                     if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
                     return `${Math.floor(seconds / 3600)}h`;
+                },
+
+                async saveStorageConfig() {
+                    try {
+                        // Load current full config
+                        const configResponse = await fetch('/api/v1/config');
+                        const currentConfig = await configResponse.json();
+
+                        // Update storage section
+                        currentConfig.storage = {
+                            backend: this.storageForm.backend,
+                            badger: {
+                                enabled: this.storageForm.badger.enabled,
+                                path: this.storageForm.badger.path,
+                                retentionDays: this.storageForm.badger.retentionDays,
+                                enableAggregation: this.storageForm.badger.enableAggregation
+                            }
+                        };
+
+                        // Save updated config
+                        const response = await fetch('/api/v1/config', {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ config: currentConfig })
+                        });
+
+                        const result = await response.json();
+
+                        if (result.success) {
+                            this.toast('Storage configuration saved successfully. Restart required for changes to take effect.', 'success');
+                        } else {
+                            this.toast(result.error || result.message, 'error');
+                        }
+                    } catch (error) {
+                        console.error('Failed to save storage config:', error);
+                        this.toast('Failed to save storage configuration', 'error');
+                    }
                 },
 
                 toast(message, type = 'success') {

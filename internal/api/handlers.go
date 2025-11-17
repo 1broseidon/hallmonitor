@@ -488,6 +488,14 @@ func (s *Server) getConfigHandler(c *fiber.Ctx) error {
 			"groups":          s.config.Monitoring.Groups,
 		},
 		"storage": fiber.Map{
+			"backend": s.config.Storage.Backend,
+			"badger": fiber.Map{
+				"enabled":           s.config.Storage.Badger.Enabled,
+				"path":              s.config.Storage.Badger.Path,
+				"retentionDays":     s.config.Storage.Badger.RetentionDays,
+				"enableAggregation": s.config.Storage.Badger.EnableAggregation,
+			},
+			// Legacy fields for backward compatibility
 			"enabled":           s.config.Storage.Enabled,
 			"path":              s.config.Storage.Path,
 			"retentionDays":     s.config.Storage.RetentionDays,
