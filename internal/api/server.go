@@ -241,6 +241,17 @@ func (s *Server) setupRoutes() {
 	// Configuration endpoints
 	api.Post("/reload", s.reloadConfigHandler)
 	api.Get("/config", s.getConfigHandler)
+	api.Put("/config", s.updateConfigHandler)
+
+	// Monitor CRUD endpoints
+	api.Post("/monitors", s.createMonitorHandler)
+	api.Put("/monitors/:name", s.updateMonitorHandler)
+	api.Delete("/monitors/:name", s.deleteMonitorHandler)
+
+	// Group CRUD endpoints
+	api.Post("/groups", s.createGroupHandler)
+	api.Put("/groups/:name", s.updateGroupHandler)
+	api.Delete("/groups/:name", s.deleteGroupHandler)
 
 	// Grafana export endpoint (disabled for now)
 	// if s.config.Server.EnableDashboard {

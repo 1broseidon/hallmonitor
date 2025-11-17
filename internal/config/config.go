@@ -4,10 +4,13 @@ package config
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/spf13/viper"
+	"gopkg.in/yaml.v3"
 
 	"github.com/1broseidon/hallmonitor/pkg/models"
 )
@@ -237,6 +240,195 @@ func (c *Config) Validate() error {
 	if c.Monitoring.DefaultInterval > 0 && c.Monitoring.DefaultInterval < time.Second {
 		return fmt.Errorf("monitoring.defaultInterval too short (min 1 second)")
 	}
+
+	return nil
+}
+
+// WriteConfig writes the configuration to a file atomically
+func (c *Config) WriteConfig(path string) error {
+	// Marshal config to YAML
+	data, err := yaml.Marshal(c)
+	if err != nil {
+		return fmt.Errorf("failed to marshal config: %w", err)
+	}
+
+	// Get original file permissions (default to 0644 if file doesn't exist)
+	var perm os.FileMode = 0644
+	if info, err := os.Stat(path); err == nil {
+		perm = info.Mode()
+	}
+
+	// Create temp file in same directory for atomic rename
+	dir := filepath.Dir(path)
+	tmpFile, err := os.CreateTemp(dir, ".config-*.yml.tmp")
+	if err != nil {
+		return fmt.Errorf("failed to create temp file: %w", err)
+	}
+	tmpPath := tmpFile.Name()
+
+	// Ensure temp file is cleaned up on error
+	defer func() {
+		if tmpFile != nil {
+			tmpFile.Close()
+			os.Remove(tmpPath)
+		}
+	}()
+
+	// Write data to temp file
+	if _, err := tmpFile.Write(data); err != nil {
+		return fmt.Errorf("failed to write temp file: %w", err)
+	}
+
+	// Sync to ensure data is written to disk
+	if err := tmpFile.Sync(); err != nil {
+		return fmt.Errorf("failed to sync temp file: %w", err)
+	}
+
+	// Close temp file
+	if err := tmpFile.Close(); err != nil {
+		return fmt.Errorf("failed to close temp file: %w", err)
+	}
+
+	// Set proper permissions
+	if err := os.Chmod(tmpPath, perm); err != nil {
+		return fmt.Errorf("failed to set permissions: %w", err)
+	}
+
+	// Atomic rename
+	if err := os.Rename(tmpPath, path); err != nil {
+		return fmt.Errorf("failed to rename temp file: %w", err)
+	}
+
+	// Success - prevent cleanup
+	tmpFile = nil
+
+	return nil
+}
+
+// FindMonitor finds a monitor by name and returns the group index and monitor index
+func (c *Config) FindMonitor(monitorName string) (groupIdx, monitorIdx int, found bool) {
+	for gi, group := range c.Monitoring.Groups {
+		for mi, monitor := range group.Monitors {
+			if monitor.Name == monitorName {
+				return gi, mi, true
+			}
+		}
+	}
+	return -1, -1, false
+}
+
+// AddMonitor adds a monitor to a group
+func (c *Config) AddMonitor(groupName string, monitor models.Monitor) error {
+	// Check if monitor name already exists
+	if _, _, found := c.FindMonitor(monitor.Name); found {
+		return fmt.Errorf("monitor with name %s already exists", monitor.Name)
+	}
+
+	// Find the group
+	groupIdx := -1
+	for i, group := range c.Monitoring.Groups {
+		if group.Name == groupName {
+			groupIdx = i
+			break
+		}
+	}
+
+	if groupIdx == -1 {
+		return fmt.Errorf("group %s not found", groupName)
+	}
+
+	// Add monitor to group
+	c.Monitoring.Groups[groupIdx].Monitors = append(c.Monitoring.Groups[groupIdx].Monitors, monitor)
+
+	return nil
+}
+
+// UpdateMonitor updates an existing monitor
+func (c *Config) UpdateMonitor(monitorName string, updated models.Monitor) error {
+	groupIdx, monitorIdx, found := c.FindMonitor(monitorName)
+	if !found {
+		return fmt.Errorf("monitor %s not found", monitorName)
+	}
+
+	// If name is being changed, check for duplicates
+	if updated.Name != monitorName {
+		if _, _, exists := c.FindMonitor(updated.Name); exists {
+			return fmt.Errorf("monitor with name %s already exists", updated.Name)
+		}
+	}
+
+	// Update the monitor
+	c.Monitoring.Groups[groupIdx].Monitors[monitorIdx] = updated
+
+	return nil
+}
+
+// DeleteMonitor deletes a monitor by name
+func (c *Config) DeleteMonitor(monitorName string) error {
+	groupIdx, monitorIdx, found := c.FindMonitor(monitorName)
+	if !found {
+		return fmt.Errorf("monitor %s not found", monitorName)
+	}
+
+	// Remove monitor from slice
+	group := &c.Monitoring.Groups[groupIdx]
+	group.Monitors = append(group.Monitors[:monitorIdx], group.Monitors[monitorIdx+1:]...)
+
+	return nil
+}
+
+// FindGroup finds a group by name and returns its index
+func (c *Config) FindGroup(groupName string) (int, bool) {
+	for i, group := range c.Monitoring.Groups {
+		if group.Name == groupName {
+			return i, true
+		}
+	}
+	return -1, false
+}
+
+// AddGroup adds a new monitoring group
+func (c *Config) AddGroup(group models.MonitorGroup) error {
+	// Check if group already exists
+	if _, found := c.FindGroup(group.Name); found {
+		return fmt.Errorf("group with name %s already exists", group.Name)
+	}
+
+	// Add group
+	c.Monitoring.Groups = append(c.Monitoring.Groups, group)
+
+	return nil
+}
+
+// UpdateGroup updates an existing group
+func (c *Config) UpdateGroup(groupName string, updated models.MonitorGroup) error {
+	groupIdx, found := c.FindGroup(groupName)
+	if !found {
+		return fmt.Errorf("group %s not found", groupName)
+	}
+
+	// If name is being changed, check for duplicates
+	if updated.Name != groupName {
+		if _, exists := c.FindGroup(updated.Name); exists {
+			return fmt.Errorf("group with name %s already exists", updated.Name)
+		}
+	}
+
+	// Update the group
+	c.Monitoring.Groups[groupIdx] = updated
+
+	return nil
+}
+
+// DeleteGroup deletes a group by name
+func (c *Config) DeleteGroup(groupName string) error {
+	groupIdx, found := c.FindGroup(groupName)
+	if !found {
+		return fmt.Errorf("group %s not found", groupName)
+	}
+
+	// Remove group from slice
+	c.Monitoring.Groups = append(c.Monitoring.Groups[:groupIdx], c.Monitoring.Groups[groupIdx+1:]...)
 
 	return nil
 }
