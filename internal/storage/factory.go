@@ -22,11 +22,15 @@ func NewStore(cfg *config.StorageConfig, logger *logging.Logger) (ResultStore, e
 	if cfg == nil {
 		return nil, fmt.Errorf("storage config cannot be nil")
 	}
+	if logger == nil {
+		return nil, fmt.Errorf("logger cannot be nil")
+	}
 
 	// Determine backend type, defaulting to "badger" for backward compatibility
 	backendType := BackendType(cfg.Backend)
 	if backendType == "" {
 		// If no backend is specified, use the old "enabled" field for backward compatibility
+		//nolint:staticcheck
 		if cfg.Enabled {
 			backendType = BackendBadger
 		} else {
@@ -47,10 +51,10 @@ func NewStore(cfg *config.StorageConfig, logger *logging.Logger) (ResultStore, e
 
 		// Backward compatibility: if badger config is empty, use top-level config
 		if path == "" {
-			path = cfg.Path
+			path = cfg.Path //nolint:staticcheck // Intentional use of deprecated field for backward compatibility
 		}
 		if retentionDays == 0 {
-			retentionDays = cfg.RetentionDays
+			retentionDays = cfg.RetentionDays //nolint:staticcheck // Intentional use of deprecated field for backward compatibility
 		}
 
 		return NewBadgerStore(path, retentionDays, logger)
