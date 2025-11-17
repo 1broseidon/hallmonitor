@@ -485,7 +485,13 @@ func (s *Server) getConfigHandler(c *fiber.Ctx) error {
 		"monitoring": fiber.Map{
 			"defaultInterval": s.config.Monitoring.DefaultInterval,
 			"defaultTimeout":  s.config.Monitoring.DefaultTimeout,
-			"groups":          len(s.config.Monitoring.Groups),
+			"groups":          s.config.Monitoring.Groups,
+		},
+		"storage": fiber.Map{
+			"enabled":          s.config.Storage.Enabled,
+			"path":             s.config.Storage.Path,
+			"retentionDays":    s.config.Storage.RetentionDays,
+			"enableAggregation": s.config.Storage.EnableAggregation,
 		},
 	})
 }
