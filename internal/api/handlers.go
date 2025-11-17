@@ -109,6 +109,20 @@ func (s *Server) dashboardAmbientHandler(c *fiber.Ctx) error {
 	return c.SendString(buf.String())
 }
 
+// configPageHandler serves the configuration page HTML
+func (s *Server) configPageHandler(c *fiber.Ctx) error {
+	c.Set("Content-Type", "text/html; charset=utf-8")
+
+	data := DashboardData{IsAmbient: false}
+
+	var buf bytes.Buffer
+	if err := configTpl.Execute(&buf, data); err != nil {
+		return err
+	}
+
+	return c.SendString(buf.String())
+}
+
 // extractHostnameAndIP extracts hostname and IP address from a target or URL
 func extractHostnameAndIP(target, urlStr string) (hostname, ipAddr *string) {
 	var host string

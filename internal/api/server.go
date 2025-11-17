@@ -31,6 +31,7 @@ var templatesFS embed.FS
 var (
 	dashboardTpl *template.Template
 	ambientTpl   *template.Template
+	configTpl    *template.Template
 )
 
 func init() {
@@ -48,6 +49,15 @@ func init() {
 	// Parse ambient template with partials
 	ambientTpl, err = template.ParseFS(templatesFS,
 		"templates/ambient.html",
+		"templates/partials/*.html",
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	// Parse config template with partials
+	configTpl, err = template.ParseFS(templatesFS,
+		"templates/config.html",
 		"templates/partials/*.html",
 	)
 	if err != nil {
@@ -225,6 +235,7 @@ func (s *Server) setupRoutes() {
 		s.app.Get("/", s.dashboardHandler)
 		s.app.Get("/dashboard", s.dashboardHandler)
 		s.app.Get("/dashboard/ambient", s.dashboardAmbientHandler)
+		s.app.Get("/config", s.configPageHandler)
 	}
 
 	// API v1 routes
