@@ -7,11 +7,14 @@ import (
 	"embed"
 	"fmt"
 	"html/template"
+	"io/fs"
+	"net/http"
 	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/filesystem"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/fiber/v2/middleware/timeout"
@@ -28,6 +31,9 @@ import (
 
 //go:embed templates/*.html templates/partials/*.html
 var templatesFS embed.FS
+
+//go:embed static/*
+var staticFS embed.FS
 
 var (
 	dashboardTpl *template.Template
@@ -221,6 +227,21 @@ func (s *Server) setupMiddleware() {
 
 // setupRoutes configures all API routes
 func (s *Server) setupRoutes() {
+	// Static files (served from embedded filesystem)
+	staticSubFS, err := fs.Sub(staticFS, "static")
+	if err != nil {
+		s.logger.WithComponent(logging.ComponentAPI).
+			WithError(err).
+			Warn("Failed to create static file sub-filesystem")
+	} else {
+		s.app.Use("/static", filesystem.New(filesystem.Config{
+			Root:       http.FS(staticSubFS),
+			Browse:     false,
+			MaxAge:     31536000, // 1 year cache for static assets
+			PathPrefix: "",
+		}))
+	}
+
 	// Health and metrics endpoints
 	s.app.Get("/health", s.healthHandler)
 	s.app.Get("/ready", s.readyHandler)

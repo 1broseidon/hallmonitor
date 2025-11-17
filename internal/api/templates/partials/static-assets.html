@@ -1,0 +1,16 @@
+{{define "static-assets"}}
+    <!-- Local Fonts -->
+    <link rel="stylesheet" href="/static/css/fonts.css">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="/static/css/fontawesome.min.css">
+
+    <!-- HTMX -->
+    <script src="/static/js/htmx.min.js"></script>
+
+    <!-- Alpine.js -->
+    {{if .NeedsCollapse}}
+    <script defer src="/static/js/alpine-collapse.min.js"></script>
+    {{end}}
+    <script defer src="/static/js/alpine.min.js"></script>
+{{end}}
