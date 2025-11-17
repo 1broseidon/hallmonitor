@@ -22,6 +22,7 @@ import (
 	"github.com/1broseidon/hallmonitor/internal/metrics"
 	"github.com/1broseidon/hallmonitor/internal/monitors"
 	"github.com/1broseidon/hallmonitor/internal/scheduler"
+	"github.com/1broseidon/hallmonitor/internal/storage"
 	"github.com/1broseidon/hallmonitor/pkg/models"
 )
 
@@ -80,13 +81,8 @@ type Server struct {
 	monitorManager *monitors.MonitorManager
 	scheduler      *scheduler.Scheduler
 	prometheusReg  prometheus.Registerer
-	storage        StorageCloser
+	storage        storage.ResultStore
 	aggregator     dashboardAggregator
-}
-
-// StorageCloser interface for storage that needs cleanup
-type StorageCloser interface {
-	Close() error
 }
 
 // dashboardAggregator interface for dashboard-specific aggregation methods
@@ -139,7 +135,7 @@ func NewServer(cfg *config.Config, configPath string, logger *logging.Logger, pr
 }
 
 // NewServerWithStorage creates a new API server with persistent storage
-func NewServerWithStorage(cfg *config.Config, configPath string, logger *logging.Logger, prometheusReg prometheus.Registerer, persistentStore scheduler.PersistentStore, aggregator scheduler.Aggregator, storage StorageCloser) *Server {
+func NewServerWithStorage(cfg *config.Config, configPath string, logger *logging.Logger, prometheusReg prometheus.Registerer, persistentStore scheduler.PersistentStore, aggregator scheduler.Aggregator, resultStore storage.ResultStore) *Server {
 	// Create metrics instance
 	metricsInstance := metrics.NewMetrics(prometheusReg)
 
@@ -180,7 +176,7 @@ func NewServerWithStorage(cfg *config.Config, configPath string, logger *logging
 		monitorManager: monitorManager,
 		scheduler:      schedulerInstance,
 		prometheusReg:  prometheusReg,
-		storage:        storage,
+		storage:        resultStore,
 		aggregator:     dashboardAgg,
 	}
 

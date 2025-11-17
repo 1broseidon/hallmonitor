@@ -60,6 +60,18 @@ type MonitoringConfig struct {
 
 // StorageConfig contains persistent storage configuration
 type StorageConfig struct {
+	Backend string       `yaml:"backend" mapstructure:"backend"` // "none" or "badger"
+	Badger  BadgerConfig `yaml:"badger" mapstructure:"badger"`
+
+	// Deprecated: Use Backend and Badger fields instead. Kept for backward compatibility.
+	Enabled           bool   `yaml:"enabled" mapstructure:"enabled"`
+	Path              string `yaml:"path" mapstructure:"path"`
+	RetentionDays     int    `yaml:"retentionDays" mapstructure:"retentionDays"`
+	EnableAggregation bool   `yaml:"enableAggregation" mapstructure:"enableAggregation"`
+}
+
+// BadgerConfig contains BadgerDB-specific configuration
+type BadgerConfig struct {
 	Enabled           bool   `yaml:"enabled" mapstructure:"enabled"`
 	Path              string `yaml:"path" mapstructure:"path"`
 	RetentionDays     int    `yaml:"retentionDays" mapstructure:"retentionDays"`
@@ -107,6 +119,12 @@ func LoadConfig(configPath string) (*Config, error) {
 	v.SetDefault("monitoring.defaultInterval", "30s")
 	v.SetDefault("monitoring.defaultTimeout", "10s")
 	v.SetDefault("monitoring.defaultSSLCertExpiryWarningDays", 30)
+	v.SetDefault("storage.backend", "badger")
+	v.SetDefault("storage.badger.enabled", true)
+	v.SetDefault("storage.badger.path", "./data/hallmonitor.db")
+	v.SetDefault("storage.badger.retentionDays", 30)
+	v.SetDefault("storage.badger.enableAggregation", true)
+	// Backward compatibility defaults
 	v.SetDefault("storage.enabled", true)
 	v.SetDefault("storage.path", "./data/hallmonitor.db")
 	v.SetDefault("storage.retentionDays", 30)
