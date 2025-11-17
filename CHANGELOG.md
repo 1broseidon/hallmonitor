@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2025-11-16
+
+### Added
+- Storage backend abstraction layer with pluggable architecture
+- `ResultStore` interface for all storage backends to implement
+- NoOp storage backend for metrics-only deployments
+- Factory pattern for storage backend instantiation
+- Backend capability detection system (`BackendCapabilities`)
+- Web-based storage configuration UI in `/config` page
+- Visual backend selection (BadgerDB vs Metrics Only)
+- Storage settings panel with path, retention, and aggregation controls
+- Comprehensive factory tests (8 new test cases, 32 total storage tests)
+- Production-ready error handling with nil validation
+- HTTP 501 responses for unsupported storage operations
+- Helpful error messages guiding users to enable required backends
+
+### Changed
+- BadgerDB storage now implements `ResultStore` interface
+- Storage configuration structure with nested `badger` section
+- Server initialization to use factory pattern instead of direct BadgerStore creation
+- Config API endpoints to expose new storage structure
+- Example configuration file with new storage backend format
+- API handlers to check storage capabilities before operations
+
+### Fixed
+- Added nil logger validation in storage factory
+- Added `server` binary to .gitignore to prevent accidental commits
+
+### Migration Notes
+- Existing configurations continue to work (backward compatible)
+- Old format: `storage.enabled: true` automatically maps to `backend: "badger"`
+- New format recommended: `storage.backend: "badger"` with nested settings
+- No breaking changes - seamless upgrade path
+
 ## [0.3.0] - 2025-11-16
 
 ### Added
@@ -86,7 +120,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Request Header Fields Too Large error for remote mobile access
 
-[unreleased]: https://github.com/1broseidon/hallmonitor/compare/v0.3.0...HEAD
+[unreleased]: https://github.com/1broseidon/hallmonitor/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/1broseidon/hallmonitor/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/1broseidon/hallmonitor/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/1broseidon/hallmonitor/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/1broseidon/hallmonitor/releases/tag/v0.1.0
