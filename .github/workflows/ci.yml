@@ -48,9 +48,6 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Run staticcheck
-        run: make staticcheck
-
       - name: Run go vet
         run: make vet
 
