@@ -1,0 +1,98 @@
+# HallMonitor Configuration with PostgreSQL Storage
+# This example shows how to configure HallMonitor to use PostgreSQL/TimescaleDB
+
+server:
+  port: "7878"
+  host: "0.0.0.0"
+  enableDashboard: true
+
+# Storage Configuration - PostgreSQL
+storage:
+  backend: "postgres"  # Use PostgreSQL storage backend
+
+  postgres:
+    host: "localhost"
+    port: 5432
+    database: "hallmonitor"
+    user: "hallmonitor"
+    password: "${POSTGRES_PASSWORD}"  # Use environment variable for security
+    sslmode: "require"  # Use "require" or higher for production
+    retentionDays: 90  # Keep data for 90 days
+    enableTimescale: true  # Optional: Enable TimescaleDB hypertables for better performance
+
+# Metrics Configuration
+metrics:
+  enabled: true
+  path: "/metrics"
+  includeProcessMetrics: true
+  includeGoMetrics: true
+
+# Logging Configuration
+logging:
+  level: "info"
+  format: "json"
+  output: "stdout"
+
+# Monitoring Configuration
+monitoring:
+  defaultInterval: "30s"
+  defaultTimeout: "10s"
+
+  groups:
+    - name: "production"
+      interval: "30s"
+      monitors:
+        - name: "api-server"
+          type: "http"
+          url: "https://api.example.com/health"
+          interval: "30s"
+          timeout: "10s"
+          expectedStatus: 200
+
+        - name: "database"
+          type: "tcp"
+          target: "db.example.com:5432"
+          interval: "60s"
+          timeout: "5s"
+
+        - name: "dns-check"
+          type: "dns"
+          target: "8.8.8.8"
+          query: "example.com"
+          interval: "300s"
+
+# Docker Compose Example for PostgreSQL
+# ----------------------------------------
+# version: '3.8'
+#
+# services:
+#   hallmonitor:
+#     image: hallmonitor:latest
+#     ports:
+#       - "7878:7878"
+#     environment:
+#       POSTGRES_PASSWORD: "your-secure-password"
+#     depends_on:
+#       postgres:
+#         condition: service_healthy
+#     volumes:
+#       - ./config-postgres.yml:/app/config.yml
+#
+#   postgres:
+#     image: timescale/timescaledb:latest-pg15
+#     environment:
+#       POSTGRES_DB: hallmonitor
+#       POSTGRES_USER: hallmonitor
+#       POSTGRES_PASSWORD: your-secure-password
+#     ports:
+#       - "5432:5432"
+#     volumes:
+#       - postgres_data:/var/lib/postgresql/data
+#     healthcheck:
+#       test: ["CMD-SHELL", "pg_isready -U hallmonitor"]
+#       interval: 10s
+#       timeout: 5s
+#       retries: 5
+#
+# volumes:
+#   postgres_data:

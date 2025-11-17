@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: timescale/timescaledb:latest-pg15
+    environment:
+      POSTGRES_DB: hallmonitor_test
+      POSTGRES_USER: hallmonitor
+      POSTGRES_PASSWORD: hallmonitor
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hallmonitor"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  influxdb:
+    image: influxdb:2.7
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: hallmonitor
+      DOCKER_INFLUXDB_INIT_PASSWORD: hallmonitor
+      DOCKER_INFLUXDB_INIT_ORG: hallmonitor
+      DOCKER_INFLUXDB_INIT_BUCKET: test
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: hallmonitor-test-token
+    ports:
+      - "8086:8086"
+    healthcheck:
+      test: ["CMD", "influx", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5

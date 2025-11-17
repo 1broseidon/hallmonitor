@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- PostgreSQL/TimescaleDB storage backend support
+- InfluxDB storage backend support
+- PostgresStore implementation with full ResultStore interface
+- InfluxDBStore implementation with Flux query support
+- Automatic schema initialization for PostgreSQL
+- TimescaleDB hypertable support (optional)
+- Connection pooling for PostgreSQL (configurable)
+- Health check endpoints for storage backends
+- Retention cleanup for PostgreSQL (daily background task)
+- Integration tests for PostgreSQL backend
+- Integration tests for InfluxDB backend
+- Docker Compose test infrastructure (docker-compose.test.yml)
+- PostgreSQL configuration example (examples/config-postgres.yml)
+- InfluxDB configuration example (examples/config-influxdb.yml)
+- Comprehensive storage backends documentation (docs/storage-backends.md)
+- Web UI support for PostgreSQL configuration
+- Web UI support for InfluxDB configuration
+- Four storage backend options in config UI (BadgerDB, PostgreSQL, InfluxDB, None)
+
+### Changed
+- Updated storage factory to support postgres and influxdb backends
+- Extended StorageConfig with PostgresConfig and InfluxDBConfig
+- Added default configurations for new backends
+- Enhanced config.html with grid layout for 4 backend options
+- Updated error messages to include new backend options
+
+### Dependencies
+- Added github.com/jackc/pgx/v5 for PostgreSQL connectivity
+- Added github.com/jackc/pgx/v5/pgxpool for connection pooling
+- Added github.com/influxdata/influxdb-client-go/v2 for InfluxDB support
+
+### Documentation
+- Storage backends comparison matrix
+- Backend selection guide
+- Security best practices for database credentials
+- Performance recommendations for each backend
+- Migration guide (planned for future implementation)
+- Troubleshooting section for common issues
+
 ## [0.4.0] - 2025-11-16
 
 ### Added

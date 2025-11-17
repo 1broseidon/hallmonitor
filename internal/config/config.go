@@ -60,10 +60,12 @@ type MonitoringConfig struct {
 
 // StorageConfig contains persistent storage configuration
 type StorageConfig struct {
-	Backend string       `yaml:"backend" mapstructure:"backend"` // "none" or "badger"
-	Badger  BadgerConfig `yaml:"badger" mapstructure:"badger"`
+	Backend  string          `yaml:"backend" mapstructure:"backend"` // "none", "badger", "postgres", or "influxdb"
+	Badger   BadgerConfig    `yaml:"badger" mapstructure:"badger"`
+	Postgres PostgresConfig  `yaml:"postgres" mapstructure:"postgres"`
+	InfluxDB InfluxDBConfig  `yaml:"influxdb" mapstructure:"influxdb"`
 
-	// Deprecated: Use Backend and Badger fields instead. Kept for backward compatibility.
+	// Deprecated: Use Backend and backend-specific fields instead. Kept for backward compatibility.
 	Enabled           bool   `yaml:"enabled" mapstructure:"enabled"`
 	Path              string `yaml:"path" mapstructure:"path"`
 	RetentionDays     int    `yaml:"retentionDays" mapstructure:"retentionDays"`
@@ -76,6 +78,29 @@ type BadgerConfig struct {
 	Path              string `yaml:"path" mapstructure:"path"`
 	RetentionDays     int    `yaml:"retentionDays" mapstructure:"retentionDays"`
 	EnableAggregation bool   `yaml:"enableAggregation" mapstructure:"enableAggregation"`
+}
+
+// PostgresConfig contains PostgreSQL-specific configuration
+type PostgresConfig struct {
+	Host          string `yaml:"host" mapstructure:"host"`
+	Port          int    `yaml:"port" mapstructure:"port"`
+	Database      string `yaml:"database" mapstructure:"database"`
+	User          string `yaml:"user" mapstructure:"user"`
+	Password      string `yaml:"password" mapstructure:"password"`
+	SSLMode       string `yaml:"sslmode" mapstructure:"sslmode"`
+	RetentionDays int    `yaml:"retentionDays" mapstructure:"retentionDays"`
+
+	// Optional TimescaleDB settings
+	EnableTimescale bool `yaml:"enableTimescale" mapstructure:"enableTimescale"`
+}
+
+// InfluxDBConfig contains InfluxDB-specific configuration
+type InfluxDBConfig struct {
+	URL           string `yaml:"url" mapstructure:"url"`
+	Token         string `yaml:"token" mapstructure:"token"`
+	Org           string `yaml:"org" mapstructure:"org"`
+	Bucket        string `yaml:"bucket" mapstructure:"bucket"`
+	RetentionDays int    `yaml:"retentionDays" mapstructure:"retentionDays"`
 }
 
 // AlertingConfig contains alerting configuration
@@ -124,6 +149,19 @@ func LoadConfig(configPath string) (*Config, error) {
 	v.SetDefault("storage.badger.path", "./data/hallmonitor.db")
 	v.SetDefault("storage.badger.retentionDays", 30)
 	v.SetDefault("storage.badger.enableAggregation", true)
+	// PostgreSQL defaults
+	v.SetDefault("storage.postgres.host", "localhost")
+	v.SetDefault("storage.postgres.port", 5432)
+	v.SetDefault("storage.postgres.database", "hallmonitor")
+	v.SetDefault("storage.postgres.user", "hallmonitor")
+	v.SetDefault("storage.postgres.sslmode", "disable")
+	v.SetDefault("storage.postgres.retentionDays", 90)
+	v.SetDefault("storage.postgres.enableTimescale", false)
+	// InfluxDB defaults
+	v.SetDefault("storage.influxdb.url", "http://localhost:8086")
+	v.SetDefault("storage.influxdb.org", "hallmonitor")
+	v.SetDefault("storage.influxdb.bucket", "monitor_results")
+	v.SetDefault("storage.influxdb.retentionDays", 30)
 	// Backward compatibility defaults
 	v.SetDefault("storage.enabled", true)
 	v.SetDefault("storage.path", "./data/hallmonitor.db")

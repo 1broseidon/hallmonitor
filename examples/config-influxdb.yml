@@ -1,0 +1,105 @@
+# HallMonitor Configuration with InfluxDB Storage
+# This example shows how to configure HallMonitor to use InfluxDB
+
+server:
+  port: "7878"
+  host: "0.0.0.0"
+  enableDashboard: true
+
+# Storage Configuration - InfluxDB
+storage:
+  backend: "influxdb"  # Use InfluxDB storage backend
+
+  influxdb:
+    url: "http://localhost:8086"
+    token: "${INFLUXDB_TOKEN}"  # Use environment variable for security
+    org: "hallmonitor"
+    bucket: "monitor_results"
+    retentionDays: 30  # Keep data for 30 days
+
+# Metrics Configuration
+metrics:
+  enabled: true
+  path: "/metrics"
+  includeProcessMetrics: true
+  includeGoMetrics: true
+
+# Logging Configuration
+logging:
+  level: "info"
+  format: "json"
+  output: "stdout"
+
+# Monitoring Configuration
+monitoring:
+  defaultInterval: "30s"
+  defaultTimeout: "10s"
+
+  groups:
+    - name: "production"
+      interval: "30s"
+      monitors:
+        - name: "api-server"
+          type: "http"
+          url: "https://api.example.com/health"
+          interval: "30s"
+          timeout: "10s"
+          expectedStatus: 200
+
+        - name: "database"
+          type: "tcp"
+          target: "db.example.com:5432"
+          interval: "60s"
+          timeout: "5s"
+
+        - name: "ping-gateway"
+          type: "ping"
+          target: "192.168.1.1"
+          interval: "60s"
+
+# Docker Compose Example for InfluxDB
+# --------------------------------------
+# version: '3.8'
+#
+# services:
+#   hallmonitor:
+#     image: hallmonitor:latest
+#     ports:
+#       - "7878:7878"
+#     environment:
+#       INFLUXDB_TOKEN: "your-influxdb-token"
+#     depends_on:
+#       influxdb:
+#         condition: service_healthy
+#     volumes:
+#       - ./config-influxdb.yml:/app/config.yml
+#
+#   influxdb:
+#     image: influxdb:2.7
+#     environment:
+#       DOCKER_INFLUXDB_INIT_MODE: setup
+#       DOCKER_INFLUXDB_INIT_USERNAME: hallmonitor
+#       DOCKER_INFLUXDB_INIT_PASSWORD: hallmonitor
+#       DOCKER_INFLUXDB_INIT_ORG: hallmonitor
+#       DOCKER_INFLUXDB_INIT_BUCKET: monitor_results
+#       DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: your-influxdb-token
+#     ports:
+#       - "8086:8086"
+#     volumes:
+#       - influxdb_data:/var/lib/influxdb2
+#     healthcheck:
+#       test: ["CMD", "influx", "ping"]
+#       interval: 10s
+#       timeout: 5s
+#       retries: 5
+#
+# volumes:
+#   influxdb_data:
+#
+# Creating the bucket manually:
+# -----------------------------
+# influx bucket create \
+#   --name monitor_results \
+#   --org hallmonitor \
+#   --retention 30d \
+#   --token your-influxdb-token
