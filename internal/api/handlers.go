@@ -488,9 +488,9 @@ func (s *Server) getConfigHandler(c *fiber.Ctx) error {
 			"groups":          s.config.Monitoring.Groups,
 		},
 		"storage": fiber.Map{
-			"enabled":          s.config.Storage.Enabled,
-			"path":             s.config.Storage.Path,
-			"retentionDays":    s.config.Storage.RetentionDays,
+			"enabled":           s.config.Storage.Enabled,
+			"path":              s.config.Storage.Path,
+			"retentionDays":     s.config.Storage.RetentionDays,
 			"enableAggregation": s.config.Storage.EnableAggregation,
 		},
 	})
@@ -576,6 +576,18 @@ type GroupStatus struct {
 
 // getMonitorHistoryHandler returns historical results for a monitor
 func (s *Server) getMonitorHistoryHandler(c *fiber.Ctx) error {
+	// Check if storage backend supports historical queries
+	if s.storage != nil {
+		caps := s.storage.Capabilities()
+		if !caps.SupportsRawResults {
+			return c.Status(fiber.StatusNotImplemented).JSON(fiber.Map{
+				"error":   true,
+				"message": "Current storage backend does not support historical queries",
+				"hint":    "Enable BadgerDB storage in config.yml (set storage.backend to 'badger')",
+			})
+		}
+	}
+
 	monitorName := c.Params("name")
 
 	// Parse query parameters
@@ -652,6 +664,18 @@ func (s *Server) getMonitorHistoryHandler(c *fiber.Ctx) error {
 
 // getMonitorUptimeHandler returns uptime percentage for a monitor
 func (s *Server) getMonitorUptimeHandler(c *fiber.Ctx) error {
+	// Check if storage backend supports historical queries
+	if s.storage != nil {
+		caps := s.storage.Capabilities()
+		if !caps.SupportsRawResults {
+			return c.Status(fiber.StatusNotImplemented).JSON(fiber.Map{
+				"error":   true,
+				"message": "Current storage backend does not support uptime calculations",
+				"hint":    "Enable BadgerDB storage in config.yml (set storage.backend to 'badger')",
+			})
+		}
+	}
+
 	monitorName := c.Params("name")
 	periodStr := c.Query("period", "24h")
 

@@ -26,12 +26,6 @@ monitoring:
   defaultInterval: "30s"
   defaultTimeout: "10s"
 
-storage:
-  enabled: true
-  path: "./data/hallmonitor.db"
-  retentionDays: 30  # Options: 7, 30, 90 or any positive number
-  enableAggregation: true
-
   groups:
     # Critical infrastructure services
     - name: "critical-services"
@@ -100,6 +94,21 @@ storage:
           enabled: true
           labels:
             device_type: "nas"
+
+# Storage backend configuration
+storage:
+  # Backend type: "badger" (embedded DB) or "none" (metrics only, no persistence)
+  backend: "badger"
+
+  # BadgerDB-specific settings (used when backend=badger)
+  badger:
+    enabled: true
+    path: "./data/hallmonitor.db"
+    retentionDays: 30  # Options: 7, 30, 90 or any positive number
+    enableAggregation: true  # Enable hourly/daily rollups
+
+  # Note: Use backend="none" if you only want Prometheus metrics without
+  # storing historical data. This is useful when running alongside Prometheus.
 
 alerting:
   enabled: false

@@ -386,6 +386,16 @@ func (bs *BadgerStore) Close() error {
 	return bs.db.Close()
 }
 
+// Capabilities returns the capabilities of the BadgerDB storage backend
+func (bs *BadgerStore) Capabilities() BackendCapabilities {
+	return BackendCapabilities{
+		SupportsAggregation: true,
+		SupportsRetention:   true,
+		SupportsRawResults:  true,
+		ReadOnly:            false,
+	}
+}
+
 // runGC runs garbage collection periodically
 func (bs *BadgerStore) runGC() {
 	ticker := time.NewTicker(5 * time.Minute)

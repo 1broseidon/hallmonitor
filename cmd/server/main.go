@@ -48,35 +48,38 @@ func main() {
 	// Create Prometheus registry
 	registry := prometheus.NewRegistry()
 
-	// Initialize storage if enabled
+	// Initialize storage backend
 	var server *api.Server
-	if cfg.Storage.Enabled {
-		logger.Info("Initializing persistent storage")
+	store, err := storage.NewStore(&cfg.Storage, logger)
+	if err != nil {
+		logger.WithError(err).Fatal("Failed to initialize storage backend")
+	}
 
-		// Create BadgerDB store
-		badgerStore, err := storage.NewBadgerStore(cfg.Storage.Path, cfg.Storage.RetentionDays, logger)
-		if err != nil {
-			logger.WithError(err).Fatal("Failed to initialize storage")
-		}
+	// Check storage capabilities
+	caps := store.Capabilities()
 
-		// Create aggregator if enabled
-		var aggregator *storage.Aggregator
-		if cfg.Storage.EnableAggregation {
+	// Create aggregator if backend supports aggregation and it's enabled
+	var aggregator *storage.Aggregator
+	enableAggregation := cfg.Storage.EnableAggregation || cfg.Storage.Badger.EnableAggregation
+	if caps.SupportsAggregation && enableAggregation {
+		if badgerStore, ok := store.(*storage.BadgerStore); ok {
 			aggregator = storage.NewAggregator(badgerStore, logger)
+			logger.Info("Storage aggregation enabled")
 		}
+	}
 
-		// Create server with storage
-		server = api.NewServerWithStorage(cfg, *configPath, logger, registry, badgerStore, aggregator, badgerStore)
-
+	// Create server with storage
+	if caps.SupportsRawResults {
+		server = api.NewServerWithStorage(cfg, *configPath, logger, registry, store, aggregator, store)
 		logger.WithFields(map[string]interface{}{
-			"path":          cfg.Storage.Path,
-			"retentionDays": cfg.Storage.RetentionDays,
-			"aggregation":   cfg.Storage.EnableAggregation,
+			"backend":             cfg.Storage.Backend,
+			"supportsRawResults":  caps.SupportsRawResults,
+			"supportsAggregation": caps.SupportsAggregation,
 		}).Info("Persistent storage enabled")
 	} else {
-		// Create server without storage
+		// Create server without persistent storage (NoOp backend)
 		server = api.NewServer(cfg, *configPath, logger, registry)
-		logger.Info("Running without persistent storage (data will be lost on restart)")
+		logger.Info("Running in metrics-only mode (no persistent storage)")
 	}
 
 	// Load monitors from configuration
