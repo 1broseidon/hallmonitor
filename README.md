@@ -6,6 +6,8 @@ Lightweight network monitoring for home labs and Kubernetes clusters.
 
 Hall Monitor is a Go-based monitoring solution designed for home labs and cloud-native environments. It provides HTTP, TCP, DNS, and Ping monitoring with built-in Prometheus metrics export and a lightweight web dashboard.
 
+![Hall Monitor Dashboard](docs/images/dashboard-screenshot.png)
+
 ## Features
 
 - **Multiple Monitor Types**
