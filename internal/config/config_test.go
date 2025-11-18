@@ -66,7 +66,7 @@ monitoring:
 	}
 
 	group := cfg.Monitoring.Groups[0]
-	if group.Interval != time.Minute {
+	if group.Interval != models.Duration(time.Minute) {
 		t.Fatalf("expected group interval to default to 1m, got %s", group.Interval)
 	}
 
@@ -75,11 +75,11 @@ monitoring:
 	}
 
 	monitor := group.Monitors[0]
-	if monitor.Interval != time.Minute {
+	if monitor.Interval != models.Duration(time.Minute) {
 		t.Fatalf("expected monitor interval to default to group interval 1m, got %s", monitor.Interval)
 	}
 
-	if monitor.Timeout != 5*time.Second {
+	if monitor.Timeout != models.Duration(5*time.Second) {
 		t.Fatalf("expected monitor timeout to default to 5s, got %s", monitor.Timeout)
 	}
 
@@ -150,8 +150,8 @@ func TestConfigValidateSuccess(t *testing.T) {
 	cfg := &Config{
 		Server: ServerConfig{Port: "8080"},
 		Monitoring: MonitoringConfig{
-			DefaultInterval: 30 * time.Second,
-			DefaultTimeout:  10 * time.Second,
+			DefaultInterval: models.Duration(30 * time.Second),
+			DefaultTimeout:  models.Duration(10 * time.Second),
 			Groups: []models.MonitorGroup{
 				{
 					Name: "core",
@@ -214,8 +214,8 @@ func TestConfigValidateErrors(t *testing.T) {
 	invalidTimeoutConfig := &Config{
 		Server: ServerConfig{Port: "7878"},
 		Monitoring: MonitoringConfig{
-			DefaultInterval: time.Second,
-			DefaultTimeout:  time.Second,
+			DefaultInterval: models.Duration(time.Second),
+			DefaultTimeout:  models.Duration(time.Second),
 			Groups: []models.MonitorGroup{
 				{
 					Name: "group",
@@ -234,13 +234,13 @@ func TestConfigValidateErrors(t *testing.T) {
 	invalidIntervalConfig := &Config{
 		Server: ServerConfig{Port: "7878"},
 		Monitoring: MonitoringConfig{
-			DefaultInterval: time.Second,
-			DefaultTimeout:  time.Second,
+			DefaultInterval: models.Duration(time.Second),
+			DefaultTimeout:  models.Duration(time.Second),
 			Groups: []models.MonitorGroup{
 				{
 					Name: "group",
 					Monitors: []models.Monitor{
-						{Type: models.MonitorTypeHTTP, Name: "short-interval", URL: "https://example.com", Interval: 500 * time.Millisecond},
+						{Type: models.MonitorTypeHTTP, Name: "short-interval", URL: "https://example.com", Interval: models.Duration(500 * time.Millisecond)},
 					},
 				},
 			},

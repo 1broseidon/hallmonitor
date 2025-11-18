@@ -181,7 +181,7 @@ func TestTCPMonitorCheckSuccess(t *testing.T) {
 		Type:    models.MonitorTypeTCP,
 		Name:    "test-monitor",
 		Target:  addr.String(),
-		Timeout: 5 * time.Second,
+		Timeout:  models.Duration(5 * time.Second),
 	}
 
 	monitor, err := NewTCPMonitor(config, "test-group", nil, nil)
@@ -223,7 +223,7 @@ func TestTCPMonitorCheckFailure(t *testing.T) {
 		Type:    models.MonitorTypeTCP,
 		Name:    "test-monitor",
 		Target:  "127.0.0.1:54321",
-		Timeout: 100 * time.Millisecond,
+		Timeout:  models.Duration(100 * time.Millisecond),
 	}
 
 	monitor, err := NewTCPMonitor(config, "test-group", nil, nil)
@@ -257,7 +257,7 @@ func TestTCPMonitorCheckTimeout(t *testing.T) {
 		Type:    models.MonitorTypeTCP,
 		Name:    "test-monitor",
 		Target:  "192.0.2.1:80",
-		Timeout: 100 * time.Millisecond,
+		Timeout:  models.Duration(100 * time.Millisecond),
 	}
 
 	monitor, err := NewTCPMonitor(config, "test-group", nil, nil)

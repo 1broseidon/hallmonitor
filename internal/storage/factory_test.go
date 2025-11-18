@@ -221,7 +221,7 @@ func TestNewStore_UnknownBackend(t *testing.T) {
 	if err == nil {
 		t.Error("Expected error for unknown backend")
 	}
-	if err.Error() != "unknown storage backend: unknown-backend (valid options: none, badger)" {
+	if err.Error() != "unknown storage backend: unknown-backend (valid options: none, badger, postgres, influxdb)" {
 		t.Errorf("Unexpected error message: %v", err)
 	}
 }

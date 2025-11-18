@@ -53,7 +53,7 @@ func (m *stubMonitor) Check(ctx context.Context) (*models.MonitorResult, error) 
 }
 
 func (m *stubMonitor) GetConfig() *models.Monitor {
-	return &models.Monitor{Name: m.name, Type: m.monitorType, Interval: m.interval, Timeout: m.timeout}
+	return &models.Monitor{Name: m.name, Type: m.monitorType, Interval: models.Duration(m.interval), Timeout: models.Duration(m.timeout)}
 }
 
 func (m *stubMonitor) GetName() string             { return m.name }

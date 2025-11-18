@@ -49,7 +49,7 @@ func (m *mockMonitor) GetConfig() *models.Monitor {
 	return &models.Monitor{
 		Name:    m.name,
 		Type:    models.MonitorTypeHTTP,
-		Timeout: 5 * time.Second,
+		Timeout: models.Duration(5 * time.Second),
 	}
 }
 
