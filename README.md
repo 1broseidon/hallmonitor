@@ -16,23 +16,25 @@ Hall Monitor is a Go-based monitoring solution designed for home labs and cloud-
   - DNS query monitoring with type support (A, AAAA, CNAME, MX, etc.)
   - Ping/ICMP monitoring with configurable packet counts
 
-- **Built-in Dashboard**
-  - Real-time monitoring status
-  - Dark mode support
-  - Responsive design for mobile and desktop
-  - No external dependencies required
+- **Modern Web Dashboard**
+  - Real-time monitoring status with auto-refresh
+  - Responsive navigation for desktop and mobile
+  - Full-screen ambient mode for wall displays
+  - Built-in configuration UI for monitors and groups
+  - Dark/light theme toggle
+  - Zero external dependencies
+
+- **Flexible Storage**
+  - **BadgerDB** - Embedded local storage (default)
+  - **PostgreSQL** - SQL database backend
+  - **InfluxDB** - Time-series database for metrics
+  - **Metrics-only mode** - No persistence, export via Prometheus
 
 - **Prometheus Integration**
   - Full metrics export at `/metrics`
   - Custom metrics for each monitor type
   - Process and Go runtime metrics included
   - Ready for Grafana visualization
-
-- **Flexible Configuration**
-  - YAML-based configuration
-  - Environment variable substitution
-  - Hot-reload support (coming soon)
-  - Monitor grouping with custom intervals
 
 - **Cloud Native**
   - Docker and Docker Compose support
