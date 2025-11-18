@@ -116,7 +116,7 @@ func TestHTTPMonitorCheckSuccess(t *testing.T) {
 		Type:    models.MonitorTypeHTTP,
 		Name:    "test-monitor",
 		URL:     server.URL,
-		Timeout:  models.Duration(5 * time.Second),
+		Timeout: models.Duration(5 * time.Second),
 	}
 
 	monitor, err := NewHTTPMonitor(config, "test-group", nil, nil)
@@ -159,7 +159,7 @@ func TestHTTPMonitorCheckUnexpectedStatus(t *testing.T) {
 		Name:           "test-monitor",
 		URL:            server.URL,
 		ExpectedStatus: 200,
-		Timeout:  models.Duration(5 * time.Second),
+		Timeout:        models.Duration(5 * time.Second),
 	}
 
 	monitor, err := NewHTTPMonitor(config, "test-group", nil, nil)
@@ -198,7 +198,7 @@ func TestHTTPMonitorCheckTimeout(t *testing.T) {
 		Type:    models.MonitorTypeHTTP,
 		Name:    "test-monitor",
 		URL:     server.URL,
-		Timeout:  models.Duration(50 * time.Millisecond),
+		Timeout: models.Duration(50 * time.Millisecond),
 	}
 
 	monitor, err := NewHTTPMonitor(config, "test-group", nil, nil)
@@ -231,7 +231,7 @@ func TestHTTPMonitorCheckCustomHeaders(t *testing.T) {
 		Type:    models.MonitorTypeHTTP,
 		Name:    "test-monitor",
 		URL:     server.URL,
-		Timeout:  models.Duration(5 * time.Second),
+		Timeout: models.Duration(5 * time.Second),
 		Headers: map[string]string{
 			"X-Custom-Header": "test-value",
 			"Authorization":   "Bearer token123",
