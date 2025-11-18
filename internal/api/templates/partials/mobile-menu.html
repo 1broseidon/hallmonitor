@@ -1,0 +1,93 @@
+{{define "mobile-menu"}}
+<!-- Full-Screen Mobile Menu Overlay -->
+<div class="mobile-fullscreen-menu"
+     x-data="{ mobileMenuOpen: false }"
+     x-show="mobileMenuOpen"
+     x-transition:enter="menu-enter"
+     x-transition:enter-start="menu-enter-start"
+     x-transition:enter-end="menu-enter-end"
+     x-transition:leave="menu-leave"
+     x-transition:leave-start="menu-leave-start"
+     x-transition:leave-end="menu-leave-end"
+     @click.self="mobileMenuOpen = false"
+     @menu-toggle.window="mobileMenuOpen = !mobileMenuOpen"
+     role="dialog"
+     aria-modal="true"
+     style="display: none;">
+
+    <!-- Close Button -->
+    <button class="menu-close-btn"
+            @click="mobileMenuOpen = false"
+            aria-label="Close menu">
+        <i class="fas fa-times"></i>
+        <span>Close</span>
+    </button>
+
+    <!-- Menu Content -->
+    <div class="menu-content">
+        <!-- Logo Section -->
+        <div class="menu-logo">
+            <svg width="64" height="64" viewBox="0 0 140 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 60L30 60L39 45L48 75L57 30L66 82.5L75 60L93 60L108 60"
+                      stroke="url(#menuPulseGradient)"
+                      stroke-width="4"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      fill="none"/>
+                <circle cx="108" cy="60" r="6" fill="#48c78e"/>
+                <defs>
+                    <linearGradient id="menuPulseGradient" x1="12" y1="60" x2="108" y2="60" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stop-color="#667eea"/>
+                        <stop offset="70%" stop-color="#48c78e"/>
+                        <stop offset="100%" stop-color="#48c78e"/>
+                    </linearGradient>
+                </defs>
+            </svg>
+            <h2 class="menu-logo-text">Hall Monitor</h2>
+        </div>
+
+        <!-- Main Navigation -->
+        <nav class="menu-nav">
+            <a href="/dashboard"
+               class="menu-nav-item {{if eq .CurrentView "dashboard"}}active{{end}}"
+               @click="mobileMenuOpen = false">
+                <i class="fas fa-chart-line"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="/dashboard/ambient"
+               class="menu-nav-item {{if eq .CurrentView "ambient"}}active{{end}}"
+               @click="mobileMenuOpen = false">
+                <i class="fas fa-expand"></i>
+                <span>Ambient</span>
+            </a>
+            <a href="/config"
+               class="menu-nav-item {{if eq .CurrentView "config"}}active{{end}}"
+               @click="mobileMenuOpen = false">
+                <i class="fas fa-cog"></i>
+                <span>Config</span>
+            </a>
+        </nav>
+
+        <!-- Divider -->
+        <div class="menu-divider"></div>
+
+        <!-- Actions & Toggles -->
+        <div class="menu-actions" x-data="themeManager()">
+            <!-- Theme Toggle -->
+            <div class="menu-toggle-item">
+                <div class="toggle-label">
+                    <i class="fas fa-circle-half-stroke"></i>
+                    <span>Dark Mode</span>
+                </div>
+                <button class="toggle-switch"
+                        @click="toggle()"
+                        :class="{ 'active': document.documentElement.dataset.theme === 'dark' }"
+                        role="switch"
+                        :aria-checked="document.documentElement.dataset.theme === 'dark'">
+                    <span class="toggle-thumb"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}

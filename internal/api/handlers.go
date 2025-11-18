@@ -85,7 +85,10 @@ func (rw *responseWriter) Write(data []byte) (int, error) {
 func (s *Server) dashboardHandler(c *fiber.Ctx) error {
 	c.Set("Content-Type", "text/html; charset=utf-8")
 
-	data := DashboardData{IsAmbient: false}
+	data := DashboardData{
+		IsAmbient:   false,
+		CurrentView: "dashboard",
+	}
 
 	var buf bytes.Buffer
 	if err := dashboardTpl.Execute(&buf, data); err != nil {
@@ -99,7 +102,10 @@ func (s *Server) dashboardHandler(c *fiber.Ctx) error {
 func (s *Server) dashboardAmbientHandler(c *fiber.Ctx) error {
 	c.Set("Content-Type", "text/html; charset=utf-8")
 
-	data := DashboardData{IsAmbient: true}
+	data := DashboardData{
+		IsAmbient:   true,
+		CurrentView: "ambient",
+	}
 
 	var buf bytes.Buffer
 	if err := ambientTpl.Execute(&buf, data); err != nil {
@@ -113,7 +119,10 @@ func (s *Server) dashboardAmbientHandler(c *fiber.Ctx) error {
 func (s *Server) configPageHandler(c *fiber.Ctx) error {
 	c.Set("Content-Type", "text/html; charset=utf-8")
 
-	data := DashboardData{IsAmbient: false}
+	data := DashboardData{
+		IsAmbient:   false,
+		CurrentView: "config",
+	}
 
 	var buf bytes.Buffer
 	if err := configTpl.Execute(&buf, data); err != nil {

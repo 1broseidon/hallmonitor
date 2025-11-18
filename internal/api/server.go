@@ -74,7 +74,8 @@ func init() {
 
 // DashboardData holds data passed to dashboard templates
 type DashboardData struct {
-	IsAmbient bool
+	IsAmbient   bool
+	CurrentView string
 }
 
 // Server represents the API server

@@ -1,9 +1,9 @@
 {{define "header"}}
-<header class="top-header">
-    <div class="header-content">
-        <h1 class="header-title">
-            <svg width="64" height="64" viewBox="0 0 140 120" fill="none" xmlns="http://www.w3.org/2000/svg" style="overflow: visible;">
-                <!-- Heartbeat line with smooth deceleration -->
+<header class="top-header" x-data="themeManager()">
+    <div class="header-container">
+        <!-- Logo -->
+        <a href="/dashboard" class="header-logo">
+            <svg width="48" height="48" viewBox="0 0 140 120" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 60L30 60L39 45L48 75L57 30L66 82.5L75 60L93 60L108 60"
                       stroke="url(#headerPulseGradient)"
                       stroke-width="4"
@@ -20,11 +20,7 @@
                              calcMode="spline"
                              keySplines="0 0 0.2 1"/>
                 </path>
-
-                <!-- Solid core dot (never changes) -->
                 <circle cx="108" cy="60" r="6" fill="#48c78e"/>
-
-                <!-- Pulsing glow rings (expand outward with smoother easing) -->
                 <circle cx="108" cy="60" r="6" fill="#48c78e" opacity="0">
                     <animate attributeName="opacity"
                              values="0;0.4;0"
@@ -55,7 +51,6 @@
                              calcMode="spline"
                              keySplines="0.4 0 0.6 1; 0.4 0 0.6 1"/>
                 </circle>
-
                 <defs>
                     <linearGradient id="headerPulseGradient" x1="12" y1="60" x2="108" y2="60" gradientUnits="userSpaceOnUse">
                         <stop offset="0%" stop-color="#667eea"/>
@@ -64,36 +59,41 @@
                     </linearGradient>
                 </defs>
             </svg>
-            <span class="header-title-text">Hall Monitor</span>
-        </h1>
-        <div class="header-actions" x-data="themeManager()">
-            {{if .IsAmbient}}
-            <a href="/dashboard" class="header-btn header-btn-icon-only" title="Switch to Metric View">
-                <i class="fas fa-compress"></i>
+            <span class="logo-text">Hall Monitor</span>
+        </a>
+
+        <!-- Desktop Navigation -->
+        <nav class="desktop-nav">
+            <a href="/dashboard" class="nav-link {{if eq .CurrentView "dashboard"}}active{{end}}">
+                <i class="fas fa-chart-line"></i>
+                <span>Dashboard</span>
             </a>
-            {{else}}
-            <a href="/dashboard/ambient" class="header-btn header-btn-icon-only" title="Switch to Ambient View">
+            <a href="/dashboard/ambient" class="nav-link {{if eq .CurrentView "ambient"}}active{{end}}">
                 <i class="fas fa-expand"></i>
+                <span>Ambient</span>
             </a>
-            {{end}}
-            <button class="header-btn header-btn-icon-only" @click="toggle()" title="Toggle theme">
+            <a href="/config" class="nav-link {{if eq .CurrentView "config"}}active{{end}}">
+                <i class="fas fa-cog"></i>
+                <span>Config</span>
+            </a>
+        </nav>
+
+        <!-- Desktop Actions -->
+        <div class="desktop-actions">
+            <button class="action-btn" @click="toggle()" title="Toggle theme">
                 <i class="fas fa-circle-half-stroke"></i>
             </button>
-            <button class="header-btn"
-                    hx-get="/api/v1/monitors"
-                    hx-trigger="click"
-                    hx-swap="none"
-                    hx-on::after-request="htmxRefreshHandler(event)">
-                <i class="fas fa-sync"></i>
-                <span>Refresh</span>
-            </button>
-            {{if not .IsAmbient}}
-            <button class="header-btn" onclick="exportToGrafana()">
-                <i class="fas fa-download"></i>
-                <span>Export</span>
-            </button>
-            {{end}}
         </div>
+
+        <!-- Mobile Menu Button -->
+        <button class="mobile-menu-btn"
+                @click="$dispatch('menu-toggle')"
+                aria-label="Open menu">
+            <span class="hamburger">
+                <span class="line"></span>
+                <span class="line"></span>
+            </span>
+        </button>
     </div>
 </header>
 {{end}}

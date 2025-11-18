@@ -936,6 +936,28 @@
          hx-trigger="every 30s"
          hx-swap="none"
          hx-on::after-request="htmxRefreshHandler(event)">
+
+        <!-- Dashboard Actions -->
+        <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-bottom: 1.5rem;">
+            <button class="action-btn"
+                    hx-get="/api/v1/monitors"
+                    hx-trigger="click"
+                    hx-swap="none"
+                    hx-on::after-request="htmxRefreshHandler(event)"
+                    title="Refresh"
+                    style="padding: 0.75rem 1.5rem; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(255, 255, 255, 0.05); color: inherit; font-family: inherit; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.5rem;">
+                <i class="fas fa-sync"></i>
+                <span>Refresh</span>
+            </button>
+            <button class="action-btn"
+                    onclick="exportToGrafana()"
+                    title="Export"
+                    style="padding: 0.75rem 1.5rem; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(255, 255, 255, 0.05); color: inherit; font-family: inherit; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.5rem;">
+                <i class="fas fa-download"></i>
+                <span>Export</span>
+            </button>
+        </div>
+
         <section class="hero-shell">
             <div class="hero-metric">
                 <div class="hero-value" id="hero-ring">
@@ -1074,5 +1096,7 @@
     </div>
 
     <script src="/static/js/dashboard.js"></script>
+
+    {{template "mobile-menu" .}}
 </body>
 </html>
